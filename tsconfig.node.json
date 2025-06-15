@@ -20,7 +20,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "types": ["@mui/x-data-grid"]
+    "types": ["@mui/x-data-grid", "@types/react-big-calendar"],
   },
   "include": ["vite.config.ts"]
 }

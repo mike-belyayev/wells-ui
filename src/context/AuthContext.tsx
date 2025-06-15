@@ -1,21 +1,19 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState } from 'react';
+import type { ReactNode } from 'react'; // Type-only import
 
 type AuthContextType = {
-  user: any;
+  user: { username: string; role: string } | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Fixed export (either option works)
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<{ username: string; role: string } | null>(null);
 
-  const login = async (username: string, password: string) => {
-    // Replace with actual API call
-    const mockUser = { username, role: username === 'admin' ? 'admin' : 'user' };
-    setUser(mockUser);
+  const login = async (username: string, _password: string) => {
+    setUser({ username, role: username === 'admin' ? 'admin' : 'user' });
   };
 
   const logout = () => setUser(null);
