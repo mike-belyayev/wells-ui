@@ -17,6 +17,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User>(null);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const login = async (username: string, _password: string) => {
     setUser({ username, role: username === 'admin' ? 'admin' : 'user' });
   };
