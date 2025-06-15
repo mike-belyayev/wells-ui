@@ -1,8 +1,13 @@
 import { createContext, useContext, useState } from 'react';
-import type { ReactNode } from 'react'; // Type-only import
+import type { ReactNode } from 'react';
+
+type User = {
+  username: string;
+  role: string;
+} | null;
 
 type AuthContextType = {
-  user: { username: string; role: string } | null;
+  user: User;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 };
@@ -10,7 +15,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<{ username: string; role: string } | null>(null);
+  const [user, setUser] = useState<User>(null);
 
   const login = async (username: string, _password: string) => {
     setUser({ username, role: username === 'admin' ? 'admin' : 'user' });

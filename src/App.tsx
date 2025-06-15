@@ -3,8 +3,8 @@ import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import LandingPage from './pages/LandingPage';
 import HeliCalendar from './pages/HeliCalendar';
 import AdminDashboard from './pages/AdminDashboard';
-import {AuthProvider} from './context/AuthContext';
-import { useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import type { ReactNode } from 'react';
 
 const theme = createTheme({
   palette: {
@@ -13,6 +13,20 @@ const theme = createTheme({
     },
   },
 });
+
+interface ProtectedRouteProps {
+  children: ReactNode;
+  adminOnly?: boolean;
+}
+
+const ProtectedRoute = ({ children, adminOnly = false }: ProtectedRouteProps) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
+  if (!user) return <Navigate to="/" />;
+  if (adminOnly && !isAdmin) return <Navigate to="/heli" />;
+  return <>{children}</>;
+};
 
 function App() {
   return (
@@ -31,15 +45,5 @@ function App() {
     </ThemeProvider>
   );
 }
-
-// Auth protection component
-const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const { user } = useAuth(); // You'll need to implement this context
-  const isAdmin = user?.role === 'admin';
-  
-  if (!user) return <Navigate to="/" />;
-  if (adminOnly && !isAdmin) return <Navigate to="/heli" />;
-  return children;
-};
 
 export default App;
