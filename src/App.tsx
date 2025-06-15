@@ -21,7 +21,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, adminOnly = false }: ProtectedRouteProps) => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.isAdmin === true;
   
   if (!user) return <Navigate to="/" />;
   if (adminOnly && !isAdmin) return <Navigate to="/heli" />;
