@@ -4,7 +4,7 @@ import LocationDropdown from './LocationDropdown';
 import PassengerCard from './PassengerCard';
 import AddTripModal from './AddTripModal';
 
-// Export the Passenger interface so it can be used in AddTripModal
+// Export the Passenger interface so it can be used in AddTripModal.
 export interface Passenger {
   _id: string;
   firstName: string;
