@@ -345,6 +345,7 @@ export default function HeliDashboard() {
                           jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
                           fromOrigin={trip.fromOrigin}
                           toDestination={trip.toDestination}
+                          type='incoming'
                         />
                       ))}
                       <button
@@ -376,6 +377,7 @@ export default function HeliDashboard() {
                           jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
                           fromOrigin={trip.fromOrigin}
                           toDestination={trip.toDestination}
+                          type='outgoing'
                         />
                       ))}
                       <button
