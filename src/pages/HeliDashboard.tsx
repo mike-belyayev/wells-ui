@@ -37,8 +37,26 @@ export default function HeliDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedCellDate, setSelectedCellDate] = useState<Date>(new Date());
+  const [tripType, setTripType] = useState<'incoming' | 'outgoing'>('outgoing');
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const addButtonStyle: React.CSSProperties = {
+    position: 'absolute',
+    bottom: '5px',
+    right: '5px',
+    background: '#888',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    width: '20px',
+    height: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    fontSize: '14px'
+  };
 
   // Fetch passengers and trips data
   useEffect(() => {
@@ -316,26 +334,30 @@ export default function HeliDashboard() {
                       padding: '5px',
                       borderBottom: '1px solid #eee',
                       backgroundColor: 'rgba(230, 247, 230, 0.3)',
-                      overflowY: 'auto'
+                      overflowY: 'auto',
+                      position: 'relative'
                     }}>
-                      {day.incoming.map((trip, i) => {
-                        const passenger = getPassengerById(trip.passengerId);
-                        if (!passenger) {
-                          console.warn(`Passenger not found for ID: ${trip.passengerId}`);
-                          return null;
-                        }
-                        
-                        return (
-                          <PassengerCard
-                            key={i}
-                            firstName={passenger.firstName}
-                            lastName={passenger.lastName}
-                            jobRole={passenger.jobRole}
-                            fromOrigin={trip.fromOrigin}
-                            toDestination={trip.toDestination}
-                          />
-                        );
-                      })}
+                      {day.incoming.map((trip, i) => (
+                        <PassengerCard
+                          key={i}
+                          firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                          lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                          jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                          fromOrigin={trip.fromOrigin}
+                          toDestination={trip.toDestination}
+                        />
+                      ))}
+                      <button
+                        onClick={() => {
+                          setSelectedCellDate(day.date);
+                          setModalOpen(true);
+                          setTripType('incoming');
+                        }}
+                        style={addButtonStyle}
+                        title="Add incoming passenger"
+                      >
+                        +
+                      </button>
                     </div>
                     
                     {/* Outgoing Section */}
@@ -343,26 +365,30 @@ export default function HeliDashboard() {
                       height: '50%',
                       padding: '5px',
                       backgroundColor: 'rgba(230, 243, 247, 0.3)',
-                      overflowY: 'auto'
+                      overflowY: 'auto',
+                      position: 'relative'
                     }}>
-                      {day.outgoing.map((trip, i) => {
-                        const passenger = getPassengerById(trip.passengerId);
-                        if (!passenger) {
-                          console.warn(`Passenger not found for ID: ${trip.passengerId}`);
-                          return null;
-                        }
-                        
-                        return (
-                          <PassengerCard
-                            key={i}
-                            firstName={passenger.firstName}
-                            lastName={passenger.lastName}
-                            jobRole={passenger.jobRole}
-                            fromOrigin={trip.fromOrigin}
-                            toDestination={trip.toDestination}
-                          />
-                        );
-                      })}
+                      {day.outgoing.map((trip, i) => (
+                        <PassengerCard
+                          key={i}
+                          firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                          lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                          jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                          fromOrigin={trip.fromOrigin}
+                          toDestination={trip.toDestination}
+                        />
+                      ))}
+                      <button
+                        onClick={() => {
+                          setSelectedCellDate(day.date);
+                          setModalOpen(true);
+                          setTripType('outgoing');
+                        }}
+                        style={addButtonStyle}
+                        title="Add outgoing passenger"
+                      >
+                        +
+                      </button>
                     </div>
                   </div>
                   
@@ -377,32 +403,6 @@ export default function HeliDashboard() {
                   }}>
                     POB: {day.pob}
                   </div>
-
-                  {/* Add Trip Button */}
-                  <button
-                    onClick={() => {
-                      setSelectedCellDate(day.date);
-                      setModalOpen(true);
-                    }}
-                    style={{
-                      position: 'absolute',
-                      bottom: '5px',
-                      right: '5px',
-                      background: '#2c3e50',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '24px',
-                      height: '24px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      fontSize: '16px'
-                    }}
-                  >
-                    +
-                  </button>
                 </div>
               ))}
             </div>
@@ -426,6 +426,8 @@ export default function HeliDashboard() {
         onClose={() => setModalOpen(false)}
         passengers={passengers}
         selectedDate={selectedCellDate}
+        tripType={tripType}
+        currentLocation={currentLocation}
         onSubmit={handleAddTrip}
       />
     </div>
