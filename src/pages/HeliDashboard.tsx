@@ -45,8 +45,8 @@ export default function HeliDashboard() {
     position: 'absolute',
     bottom: '5px',
     right: '5px',
-    background: '#888',
-    color: 'white',
+    background: 'white',
+    color: '#888',
     border: 'none',
     borderRadius: '4px',
     width: '20px',
@@ -421,15 +421,15 @@ export default function HeliDashboard() {
       </div>
 
       {/* Add Trip Modal */}
-      <AddTripModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        passengers={passengers}
-        selectedDate={selectedCellDate}
-        tripType={tripType}
-        currentLocation={currentLocation}
-        onSubmit={handleAddTrip}
-      />
+<AddTripModal
+  isOpen={modalOpen}
+  onClose={() => setModalOpen(false)}
+  passengers={passengers}
+  selectedDate={selectedCellDate}
+  tripType={tripType}
+  currentLocation={currentLocation}
+  onSubmit={handleAddTrip}
+/>
     </div>
   );
 }

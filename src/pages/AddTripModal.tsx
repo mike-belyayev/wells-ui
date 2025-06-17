@@ -130,10 +130,12 @@ export default function AddTripModal({
   const [tripDate, setTripDate] = useState(selectedDate);
   const [showPassengerList, setShowPassengerList] = useState(false);
 
+  // Reset form when selectedDate changes
   useEffect(() => {
+    setTripDate(selectedDate);
     setFromOrigin(tripType === 'outgoing' ? currentLocation : 'NTM');
     setToDestination(tripType === 'incoming' ? currentLocation : 'NSC');
-  }, [tripType, currentLocation]);
+  }, [selectedDate, tripType, currentLocation]);
 
   const filteredPassengers = passengers.filter(passenger =>
     `${passenger.firstName} ${passenger.lastName}`
@@ -175,6 +177,7 @@ export default function AddTripModal({
                   setShowPassengerList(true);
                 }}
                 onFocus={() => setShowPassengerList(true)}
+                onBlur={() => setTimeout(() => setShowPassengerList(false), 200)}
                 placeholder="Search passenger..."
                 style={inputStyle}
               />
@@ -206,7 +209,13 @@ export default function AddTripModal({
             <input
               type="date"
               value={format(tripDate, 'yyyy-MM-dd')}
-              onChange={(e) => setTripDate(new Date(e.target.value))}
+              onChange={(e) => {
+                const selected = new Date(e.target.value);
+                // Ensure we maintain the same timezone as the original date
+                selected.setHours(selectedDate.getHours());
+                selected.setMinutes(selectedDate.getMinutes());
+                setTripDate(selected);
+              }}
               style={inputStyle}
             />
           </div>
@@ -218,7 +227,6 @@ export default function AddTripModal({
                 value={fromOrigin}
                 onChange={(e) => setFromOrigin(e.target.value)}
                 style={selectStyle}
-                disabled={tripType === 'outgoing'}
               >
                 {locations.map(loc => (
                   <option key={loc} value={loc}>{loc}</option>
@@ -231,7 +239,6 @@ export default function AddTripModal({
                 value={toDestination}
                 onChange={(e) => setToDestination(e.target.value)}
                 style={selectStyle}
-                disabled={tripType === 'incoming'}
               >
                 {locations.map(loc => (
                   <option key={loc} value={loc}>{loc}</option>
@@ -242,7 +249,7 @@ export default function AddTripModal({
 
           {fromOrigin === toDestination && (
             <div style={{ color: 'red', marginBottom: '15px' }}>
-              Origin and destination cannot be the same
+              Warning: Origin and destination cannot be the same
             </div>
           )}
 
