@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { format, addWeeks, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import LocationDropdown from './LocationDropdown';
 import PassengerCard from './PassengerCard';
+import AddTripModal from './AddTripModal';
 
-interface Passenger {
+// Export the Passenger interface so it can be used in AddTripModal
+export interface Passenger {
   _id: string;
   firstName: string;
   lastName: string;
@@ -33,6 +35,8 @@ export default function HeliDashboard() {
   const [weeksData, setWeeksData] = useState<DayData[][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedCellDate, setSelectedCellDate] = useState<Date>(new Date());
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -79,39 +83,42 @@ export default function HeliDashboard() {
     console.log('Generating weeks data...');
     
     const generateWeeks = (): DayData[][] => {
-      return Array.from({ length: 3 }, (_, weekIndex) => {
-        const weekStart = startOfWeek(addWeeks(currentDate, weekIndex));
+      return Array.from({ length: 4 }, (_, weekIndex) => {
+        const weekStart = startOfWeek(addWeeks(currentDate, weekIndex - 1));
         const weekEnd = endOfWeek(weekStart);
         const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
         
         return days.map(date => {
           const dateStr = format(date, 'yyyy-MM-dd');
           
-          // Normalize trip data in case of field name inconsistencies
-          const normalizedTrips = trips.map(trip => ({
-            ...trip,
-            fromOrigin: trip.fromOrigin || trip.fromOrigin, // Handle typo
-            toDestination: trip.toDestination || trip.toDestination
-          }));
+          // Filter trips for this exact date
+          const relevantTrips = trips.filter(trip => trip.tripDate === dateStr);
           
-          // Filter trips for this date and current location
-          const relevantTrips = normalizedTrips.filter(trip => trip.tripDate === dateStr);
+          // DEBUG: Log matching trips
+          if (dateStr === '2024-06-20') {
+            console.log('June 20 trips:', relevantTrips);
+            console.log('Current location:', currentLocation);
+          }
           
-          // Separate into incoming and outgoing based on current location
+          // Separate into incoming and outgoing
           const incoming = relevantTrips.filter(trip => 
             trip.toDestination === currentLocation
           );
+          
           const outgoing = relevantTrips.filter(trip => 
             trip.fromOrigin === currentLocation
           );
           
-          console.log(`Date: ${dateStr}, Incoming: ${incoming.length}, Outgoing: ${outgoing.length}`);
+          // DEBUG: Log counts for June 20
+          if (dateStr === '2024-06-20') {
+            console.log(`June 20 - Incoming: ${incoming.length}, Outgoing: ${outgoing.length}`);
+          }
           
           return {
             date,
             incoming,
             outgoing,
-            pob: Math.floor(Math.random() * 50) + 100 // Random POB between 100-150
+            pob: Math.floor(Math.random() * 50) + 100
           };
         });
       });
@@ -124,6 +131,31 @@ export default function HeliDashboard() {
 
   const getPassengerById = (passengerId: string): Passenger | undefined => {
     return passengers.find(p => p._id === passengerId);
+  };
+
+  const handleAddTrip = async (tripData: {
+    passengerId: string;
+    fromOrigin: string;
+    toDestination: string;
+    tripDate: string;
+  }) => {
+    try {
+      const response = await fetch('https://wells-api.vercel.app/api/trips', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tripData),
+      });
+
+      if (!response.ok) throw new Error('Failed to add trip');
+
+      const newTrip = await response.json();
+      setTrips([...trips, newTrip]);
+      setModalOpen(false);
+    } catch (error) {
+      console.error('Error adding trip:', error);
+    }
   };
 
   if (loading) {
@@ -261,7 +293,8 @@ export default function HeliDashboard() {
                   display: 'flex',
                   flexDirection: 'column',
                   borderRight: dayIndex < 6 ? '1px solid #ddd' : 'none',
-                  backgroundColor: 'white'
+                  backgroundColor: 'white',
+                  position: 'relative'
                 }}>
                   {/* Date Header */}
                   <div style={{
@@ -344,6 +377,32 @@ export default function HeliDashboard() {
                   }}>
                     POB: {day.pob}
                   </div>
+
+                  {/* Add Trip Button */}
+                  <button
+                    onClick={() => {
+                      setSelectedCellDate(day.date);
+                      setModalOpen(true);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      bottom: '5px',
+                      right: '5px',
+                      background: '#2c3e50',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      fontSize: '16px'
+                    }}
+                  >
+                    +
+                  </button>
                 </div>
               ))}
             </div>
@@ -360,6 +419,15 @@ export default function HeliDashboard() {
           </div>
         )}
       </div>
+
+      {/* Add Trip Modal */}
+      <AddTripModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        passengers={passengers}
+        selectedDate={selectedCellDate}
+        onSubmit={handleAddTrip}
+      />
     </div>
   );
 }
