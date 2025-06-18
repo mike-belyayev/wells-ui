@@ -44,8 +44,17 @@ export default function HeliDashboard() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [draggedTrip, setDraggedTrip] = useState<Trip | null>(null);
   const [dragType, setDragType] = useState<'incoming' | 'outgoing' | null>(null);
+  const [sectionHeights, setSectionHeights] = useState<{maxIncoming: number, maxOutgoing: number}[]>([]);
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const calculateMaxCardsPerWeek = (weeksData: DayData[][]) => {
+    return weeksData.map(week => {
+      const maxIncoming = Math.max(...week.map(day => day.incoming.length));
+      const maxOutgoing = Math.max(...week.map(day => day.outgoing.length));
+      return { maxIncoming, maxOutgoing };
+    });
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -101,7 +110,11 @@ export default function HeliDashboard() {
   }, [trips, passengers, currentLocation, currentDate, weekOffset]);
 
   useEffect(() => {
-    setWeeksData(generateWeeks());
+    const generatedWeeks = generateWeeks();
+    setWeeksData(generatedWeeks);
+    if (generatedWeeks.length > 0) {
+      setSectionHeights(calculateMaxCardsPerWeek(generatedWeeks));
+    }
   }, [generateWeeks]);
 
   const getPassengerById = (passengerId: string): Passenger | undefined => {
@@ -291,6 +304,9 @@ export default function HeliDashboard() {
                   <div className="passenger-lists">
                     <div 
                       className="incoming-section"
+                      style={{
+                        minHeight: `${sectionHeights[weekIndex]?.maxIncoming * 2.6 + 2.5}rem`
+                      }}
                       onDragOver={(e) => handleDragOver(e, day.date, 'incoming')}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, day.date, 'incoming')}
@@ -330,6 +346,9 @@ export default function HeliDashboard() {
                     
                     <div 
                       className="outgoing-section"
+                      style={{
+                        minHeight: `${sectionHeights[weekIndex]?.maxOutgoing * 2.6 + 2.5}rem`
+                      }}
                       onDragOver={(e) => handleDragOver(e, day.date, 'outgoing')}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, day.date, 'outgoing')}

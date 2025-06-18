@@ -228,7 +228,7 @@
 .incoming-section,
 .outgoing-section {
   flex: 1;
-  min-height: 10vh; /* Minimum height for empty sections */
+  min-height: 5rem; /* Minimum height for empty sections */
   padding: 2px;
   position: relative;
 }
