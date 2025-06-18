@@ -4,8 +4,8 @@ import LocationDropdown from './LocationDropdown';
 import PassengerCard from './PassengerCard';
 import AddTripModal from './AddTripModal';
 import EditTripModal from './EditTripModal';
+import './HeliDashboard.css';
 
-// Export the Passenger interface so it can be used in AddTripModal.
 export interface Passenger {
   _id: string;
   firstName: string;
@@ -44,31 +44,11 @@ export default function HeliDashboard() {
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const addButtonStyle: React.CSSProperties = {
-    position: 'absolute',
-    bottom: '5px',
-    right: '5px',
-    background: 'white',
-    color: '#888',
-    border: 'none',
-    borderRadius: '4px',
-    width: '20px',
-    height: '20px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    fontSize: '14px'
-  };
-
-  // Fetch passengers and trips data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        console.log('Fetching data...');
         
         const [passengersRes, tripsRes] = await Promise.all([
           fetch('https://wells-api.vercel.app/api/passengers'),
@@ -80,9 +60,6 @@ export default function HeliDashboard() {
         
         const passengersData = await passengersRes.json();
         const tripsData = await tripsRes.json();
-        
-        console.log('Passengers data:', passengersData);
-        console.log('Trips data:', tripsData);
         
         setPassengers(passengersData);
         setTrips(tripsData);
@@ -97,11 +74,8 @@ export default function HeliDashboard() {
     fetchData();
   }, []);
 
-  // Generate weeks data when location or trips change
   useEffect(() => {
     if (!trips.length || !passengers.length) return;
-
-    console.log('Generating weeks data...');
     
     const generateWeeks = (): DayData[][] => {
       return Array.from({ length: 4 }, (_, weekIndex) => {
@@ -111,43 +85,19 @@ export default function HeliDashboard() {
         
         return days.map(date => {
           const dateStr = format(date, 'yyyy-MM-dd');
-          
-          // Filter trips for this exact date
           const relevantTrips = trips.filter(trip => trip.tripDate === dateStr);
-          
-          // DEBUG: Log matching trips
-          if (dateStr === '2024-06-20') {
-            console.log('June 20 trips:', relevantTrips);
-            console.log('Current location:', currentLocation);
-          }
-          
-          // Separate into incoming and outgoing
-          const incoming = relevantTrips.filter(trip => 
-            trip.toDestination === currentLocation
-          );
-          
-          const outgoing = relevantTrips.filter(trip => 
-            trip.fromOrigin === currentLocation
-          );
-          
-          // DEBUG: Log counts for June 20
-          if (dateStr === '2024-06-20') {
-            console.log(`June 20 - Incoming: ${incoming.length}, Outgoing: ${outgoing.length}`);
-          }
           
           return {
             date,
-            incoming,
-            outgoing,
+            incoming: relevantTrips.filter(trip => trip.toDestination === currentLocation),
+            outgoing: relevantTrips.filter(trip => trip.fromOrigin === currentLocation),
             pob: Math.floor(Math.random() * 50) + 100
           };
         });
       });
     };
 
-    const newWeeksData = generateWeeks();
-    console.log('Generated weeks data:', newWeeksData);
-    setWeeksData(newWeeksData);
+    setWeeksData(generateWeeks());
   }, [trips, passengers, currentLocation, currentDate]);
 
   const getPassengerById = (passengerId: string): Passenger | undefined => {
@@ -180,75 +130,58 @@ export default function HeliDashboard() {
   };
 
   const handleUpdateTrip = async (updatedTrip: Trip) => {
-  try {
-    const response = await fetch(`https://wells-api.vercel.app/api/trips/${updatedTrip._id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updatedTrip),
-    });
+    try {
+      const response = await fetch(`https://wells-api.vercel.app/api/trips/${updatedTrip._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTrip),
+      });
 
-    if (!response.ok) throw new Error('Failed to update trip');
+      if (!response.ok) throw new Error('Failed to update trip');
 
-    setTrips(trips.map(t => t._id === updatedTrip._id ? updatedTrip : t));
-  } catch (error) {
-    console.error('Error updating trip:', error);
-  }
-};
+      setTrips(trips.map(t => t._id === updatedTrip._id ? updatedTrip : t));
+    } catch (error) {
+      console.error('Error updating trip:', error);
+    }
+  };
 
-const handleDeleteTrip = async (tripId: string) => {
-  try {
-    const response = await fetch(`https://wells-api.vercel.app/api/trips/${tripId}`, {
-      method: 'DELETE',
-    });
+  const handleDeleteTrip = async (tripId: string) => {
+    try {
+      // Optimistically update the UI first
+      setTrips(prevTrips => prevTrips.filter(t => t._id !== tripId));
+      
+      // Then make the API call
+      const response = await fetch(`https://wells-api.vercel.app/api/trips/${tripId}`, {
+        method: 'DELETE',
+      });
 
-    if (!response.ok) throw new Error('Failed to delete trip');
-
-    setTrips(trips.filter(t => t._id !== tripId));
-  } catch (error) {
-    console.error('Error deleting trip:', error);
-  }
-};
+      if (!response.ok && response.status !== 404) {
+        // If API fails, revert the optimistic update
+        const tripsRes = await fetch('https://wells-api.vercel.app/api/trips');
+        if (tripsRes.ok) {
+          const tripsData = await tripsRes.json();
+          setTrips(tripsData);
+        }
+        throw new Error('Failed to delete trip');
+      }
+    } catch (error) {
+      console.error('Error deleting trip:', error);
+    }
+  };
 
   if (loading) {
-    return <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100vh'
-    }}>Loading dashboard data...</div>;
+    return <div className="loading-container">Loading dashboard data...</div>;
   }
 
   if (error) {
-    return <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100vh',
-      color: 'red'
-    }}>Error: {error}</div>;
+    return <div className="error-container">Error: {error}</div>;
   }
 
   return (
-    <div style={{
-      height: '100vh',
-      width: '100vw',
-      margin: 0,
-      padding: '10px',
-      boxSizing: 'border-box',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-      backgroundColor: '#f5f5f5',
-      fontFamily: 'Arial, sans-serif',
-      position: 'relative'
-    }}>
-      <h2 style={{ 
-        margin: '0 0 10px 0', 
-        textAlign: 'center',
-        fontSize: '1.5rem'
-      }}>
+    <div className="dashboard-container">
+      <h2 className="dashboard-header">
         Helicopter Passenger Dashboard
       </h2>
       
@@ -258,29 +191,13 @@ const handleDeleteTrip = async (tripId: string) => {
       />
       
       {/* Column Headers - Days of Week */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '80px repeat(7, 1fr)',
-        height: '40px',
-        backgroundColor: '#2c3e50',
-        color: 'white',
-        fontWeight: 'bold'
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRight: '1px solid #3d5166'
-        }}>
+      <div className="days-header">
+        <div className="corner-cell">
           {/* Empty corner cell */}
         </div>
         {daysOfWeek.map((day, index) => (
-          <div key={index} style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRight: index < 6 ? '1px solid #3d5166' : 'none',
-            fontSize: '0.9rem'
+          <div key={index} className="day-cell" style={{ 
+            borderRight: index < 6 ? '1px solid #3d5166' : 'none'
           }}>
             {day}
           </div>
@@ -288,95 +205,41 @@ const handleDeleteTrip = async (tripId: string) => {
       </div>
       
       {/* Week Rows */}
-      <div style={{
-        flex: 1,
-        overflow: 'auto',
-        border: '1px solid #ddd'
-      }}>
+      <div className="week-container">
         {weeksData.length > 0 ? (
           weeksData.map((week, weekIndex) => (
-            <div key={weekIndex} style={{
-              display: 'grid',
-              gridTemplateColumns: '40px repeat(7, 1fr)',
-              height: '33.33%',
-              minHeight: '200px',
+            <div key={weekIndex} className="week-row" style={{
               borderBottom: weekIndex < 2 ? '1px solid #ddd' : 'none'
             }}>
               {/* Row Header - Incoming/Outgoing Labels */}
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                backgroundColor: '#ecf0f1',
-                borderRight: '1px solid #ddd'
-              }}>
-                <div style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: '#e6f7e6',
-                  borderBottom: '1px solid #ddd',
-                  fontWeight: 'bold',
-                  color: '#2e7d32',
-                  fontSize: '0.85rem',
-                  writingMode: 'vertical-rl',
-                  transform: 'rotate(180deg)'
-                }}>
+              <div className="row-header">
+                <div className="incoming-label">
                   INCOMING
                 </div>
-                <div style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: '#e6f3f7',
-                  fontWeight: 'bold',
-                  color: '#1565c0',
-                  fontSize: '0.85rem',
-                  writingMode: 'vertical-rl',
-                  transform: 'rotate(180deg)'
-                }}>
+                <div className="outgoing-label">
                   OUTGOING
                 </div>
               </div>
               
               {/* Day Columns */}
               {week.map((day, dayIndex) => (
-                <div key={dayIndex} style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  borderRight: dayIndex < 6 ? '1px solid #ddd' : 'none',
-                  backgroundColor: 'white',
-                  position: 'relative'
+                <div key={dayIndex} className="day-column" style={{
+                  borderRight: dayIndex < 6 ? '1px solid #ddd' : 'none'
                 }}>
                   {/* Date Header */}
-                  <div style={{
-                    padding: '5px',
-                    textAlign: 'center',
-                    borderBottom: '1px solid #eee',
-                    fontWeight: 'bold',
-                    fontSize: '0.8rem',
-                    backgroundColor: '#f8f9fa'
-                  }}>
+                  <div className="date-header">
                     {format(day.date, 'MMM d')}
                   </div>
                   
                   {/* Passenger Lists */}
-                  <div style={{ flex: 1 }}>
+                  <div className="passenger-lists">
                     {/* Incoming Section */}
-                    <div style={{
-                      height: '50%',
-                      padding: '5px',
-                      borderBottom: '1px solid #eee',
-                      backgroundColor: 'rgba(230, 247, 230, 0.3)',
-                      overflowY: 'auto',
-                      position: 'relative'
-                    }}>
+                    <div className="incoming-section">
                       {day.incoming.map((trip, i) => (
                         <div 
                           key={i}
                           onClick={() => setEditingTrip(trip)}
-                          style={{ cursor: 'pointer' }}
+                          className="passenger-card-container"
                         >
                           <PassengerCard
                             firstName={getPassengerById(trip.passengerId)?.firstName || ''}
@@ -394,7 +257,7 @@ const handleDeleteTrip = async (tripId: string) => {
                           setModalOpen(true);
                           setTripType('incoming');
                         }}
-                        style={addButtonStyle}
+                        className="add-button"
                         title="Add incoming passenger"
                       >
                         +
@@ -402,28 +265,22 @@ const handleDeleteTrip = async (tripId: string) => {
                     </div>
                     
                     {/* Outgoing Section */}
-                    <div style={{
-                      height: '50%',
-                      padding: '5px',
-                      backgroundColor: 'rgba(230, 243, 247, 0.3)',
-                      overflowY: 'auto',
-                      position: 'relative'
-                    }}>
+                    <div className="outgoing-section">
                       {day.outgoing.map((trip, i) => (
-                                                <div 
+                        <div 
                           key={i}
                           onClick={() => setEditingTrip(trip)}
-                          style={{ cursor: 'pointer' }}
+                          className="passenger-card-container"
                         >
-                        <PassengerCard
-                          key={i}
-                          firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                          lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                          jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                          fromOrigin={trip.fromOrigin}
-                          toDestination={trip.toDestination}
-                          type='outgoing'
-                        /></div>
+                          <PassengerCard
+                            firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                            lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                            jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                            fromOrigin={trip.fromOrigin}
+                            toDestination={trip.toDestination}
+                            type='outgoing'
+                          />
+                        </div>
                       ))}
                       <button
                         onClick={() => {
@@ -431,7 +288,7 @@ const handleDeleteTrip = async (tripId: string) => {
                           setModalOpen(true);
                           setTripType('outgoing');
                         }}
-                        style={addButtonStyle}
+                        className="add-button"
                         title="Add outgoing passenger"
                       >
                         +
@@ -440,14 +297,7 @@ const handleDeleteTrip = async (tripId: string) => {
                   </div>
                   
                   {/* POB Footer */}
-                  <div style={{
-                    padding: '3px',
-                    textAlign: 'center',
-                    borderTop: '1px solid #eee',
-                    fontSize: '0.75rem',
-                    backgroundColor: '#f8f9fa',
-                    fontWeight: '500'
-                  }}>
+                  <div className="pob-footer">
                     POB: {day.pob}
                   </div>
                 </div>
@@ -455,37 +305,31 @@ const handleDeleteTrip = async (tripId: string) => {
             </div>
           ))
         ) : (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100%',
-            color: '#666'
-          }}>
+          <div className="no-data-message">
             No trip data available for the selected location and date range
           </div>
         )}
       </div>
 
-      {/* Add Trip Modal */}
-<AddTripModal
-  isOpen={modalOpen}
-  onClose={() => setModalOpen(false)}
-  passengers={passengers}
-  selectedDate={selectedCellDate}
-  tripType={tripType}
-  currentLocation={currentLocation}
-  onSubmit={handleAddTrip}
-/>
-<EditTripModal
-  isOpen={editingTrip !== null}
-  onClose={() => setEditingTrip(null)}
-  passengers={passengers}
-  trip={editingTrip}
-  currentLocation={currentLocation}
-  onUpdate={handleUpdateTrip}
-  onDelete={handleDeleteTrip}
-/>
+      {/* Modals */}
+      <AddTripModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        passengers={passengers}
+        selectedDate={selectedCellDate}
+        tripType={tripType}
+        currentLocation={currentLocation}
+        onSubmit={handleAddTrip}
+      />
+      <EditTripModal
+        isOpen={editingTrip !== null}
+        onClose={() => setEditingTrip(null)}
+        passengers={passengers}
+        trip={editingTrip}
+        currentLocation={currentLocation}
+        onUpdate={handleUpdateTrip}
+        onDelete={handleDeleteTrip}
+      />
     </div>
   );
 }

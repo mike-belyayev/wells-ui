@@ -129,17 +129,16 @@ export default function EditTripModal({
         method: 'DELETE',
       });
 
-      // If the trip was already deleted (404), we still want to proceed
       if (!response.ok && response.status !== 404) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to delete trip');
       }
 
-      // Close the modal immediately
-      onClose();
-      
-      // Notify parent about deletion
+      // First notify parent about deletion
       onDelete(trip._id);
+      
+      // Then close the modal
+      onClose();
     } catch (error) {
       console.error('Error deleting trip:', error);
       setError(error instanceof Error ? error.message : 'Failed to delete trip. Please try again.');
