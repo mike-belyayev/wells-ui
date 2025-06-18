@@ -177,7 +177,7 @@ export default function HeliDashboard() {
     setDragType(type);
   };
 
-  const handleDragOver = (e: React.DragEvent, date: Date, type: 'incoming' | 'outgoing') => {
+  const handleDragOver = (e: React.DragEvent, _date: Date, type: 'incoming' | 'outgoing') => {
     if (dragType === type) {
       e.preventDefault();
       e.currentTarget.classList.add('drop-target');
