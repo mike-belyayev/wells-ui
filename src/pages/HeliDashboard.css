@@ -116,6 +116,7 @@
 .outgoing-label {
   background-color: #e6f3f7;
   color: #1565c0;
+  border-top: 1px solid #484d5e;
 }
 
 .day-column {
@@ -133,6 +134,7 @@
   font-weight: bold;
   font-size: 0.8rem;
   background-color: #f8f9fa;
+  height: 1.5rem;
 }
 
 .incoming-section {
@@ -148,9 +150,11 @@
   padding: 3px;
   text-align: center;
   border-top: 1px solid #eee;
+  border-bottom: 1px solid #484d5e;
   font-size: 0.75rem;
   background-color: #f8f9fa;
   font-weight: 500;
+  height: 1.5rem;
 }
 
 .add-button {
