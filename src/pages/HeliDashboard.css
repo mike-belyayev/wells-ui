@@ -7,10 +7,10 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   background-color: #f5f5f5;
   font-family: 'Arial, sans-serif';
   position: relative;
+  overflow: hidden;
 }
 
 .dashboard-header {
@@ -31,6 +31,33 @@
   color: red;
 }
 
+.location-nav-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.nav-button {
+  padding: 5px 10px;
+  background-color: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.nav-button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.week-range-display {
+  font-weight: bold;
+  min-width: 150px;
+  text-align: center;
+}
+
 .days-header {
   display: grid;
   grid-template-columns: 80px repeat(7, 1fr);
@@ -38,6 +65,9 @@
   background-color: #2c3e50;
   color: white;
   font-weight: bold;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .corner-cell {
@@ -57,16 +87,13 @@
 
 .week-container {
   flex: 1;
-  overflow: auto;
-  border: 1px solid #ddd;
+  overflow-y: auto;
 }
 
 .week-row {
   display: grid;
   grid-template-columns: 40px repeat(7, 1fr);
-  height: 33.33%;
-  min-height: 200px;
-  border-bottom: 1px solid #ddd;
+  min-height: 33.33%; /* Equal height for 3 rows */
 }
 
 .row-header {
@@ -74,6 +101,9 @@
   flex-direction: column;
   background-color: #ecf0f1;
   border-right: 1px solid #ddd;
+  position: sticky;
+  left: 0;
+  z-index: 5;
 }
 
 .incoming-label,
@@ -118,13 +148,16 @@
 
 .passenger-lists {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .incoming-section,
 .outgoing-section {
-  height: 50%;
-  padding: 5px;
-  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 2px;
+  overflow: visible;
   position: relative;
 }
 
@@ -172,5 +205,15 @@
 }
 
 .passenger-card-container {
-  cursor: pointer;
+  cursor: grab;
+  margin-bottom: 2px;
+}
+
+.passenger-card-container.dragging {
+  opacity: 0.5;
+}
+
+.drop-target {
+  background-color: rgba(255, 255, 0, 0.2);
+  border: 1px dashed #ccc;
 }

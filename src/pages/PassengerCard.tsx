@@ -1,3 +1,5 @@
+import './PassengerCard.css';
+
 interface PassengerCardProps {
   firstName: string;
   lastName: string;
@@ -15,45 +17,19 @@ export default function PassengerCard({
   toDestination,
   type 
 }: PassengerCardProps) {
-  // Define colors based on trip type
-  const backgroundColor = type === 'incoming' ? '#2e7d32' : '#1565c0'; // Dark green for incoming, dark blue for outgoing
-  const arrowColor = type === 'incoming' ? '#a5d6a7' : '#90caf9'; // Light green/blue for arrow
-
   return (
-    <div style={{
-      marginBottom: '3px',
-      fontSize: '0.75rem',
-      padding: '8px',
-      borderRadius: '4px',
-      backgroundColor: backgroundColor,
-      color: 'white',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }}>
+    <div className={`passenger-card ${type}`}>
       <div>
-        <div style={{ 
-          fontWeight: 'bold',
-          fontSize: '0.8rem'
-        }}>
+        <div className="passenger-name">
           {firstName} {lastName}
         </div>
-        <div style={{ 
-          fontSize: '0.7rem',
-          opacity: 0.9
-        }}>
+        <div className="passenger-job">
           {jobRole}
         </div>
       </div>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '4px',
-        fontSize: '0.7rem'
-      }}>
+      <div className="passenger-route">
         <span>{fromOrigin}</span>
-        <span style={{ color: arrowColor }}>→</span>
+        <span className={`route-arrow ${type}`}>→</span>
         <span>{toDestination}</span>
       </div>
     </div>

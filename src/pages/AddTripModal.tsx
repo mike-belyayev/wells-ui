@@ -70,7 +70,7 @@ export default function AddTripModal({
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h3>Add New Trip</h3>
+          <div>Add New Trip</div>
           <button onClick={onClose} className="close-button">×</button>
         </div>
 

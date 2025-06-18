@@ -153,7 +153,7 @@ export default function EditTripModal({
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h3>Edit Trip</h3>
+          <div>Edit Trip</div>
           <button onClick={onClose} className="close-button">×</button>
         </div>
 
