@@ -81,7 +81,7 @@ export default function HeliDashboard() {
     if (!trips.length || !passengers.length) return [];
 
     return Array.from({ length: 3 }, (_, weekIndex) => {
-      const weekStart = startOfWeek(addWeeks(currentDate, weekOffset + weekIndex - 1));
+      const weekStart = startOfWeek(addWeeks(currentDate, (weekOffset * 3) + weekIndex - 1));
       const weekEnd = endOfWeek(weekStart);
       const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
       
@@ -230,31 +230,33 @@ export default function HeliDashboard() {
 
   return (
     <div className="dashboard-container">
-      <h2 className="dashboard-header">
-        Helicopter Passenger Dashboard
-      </h2>
-      
-      <div className="location-nav-container">
-        <button 
-          className="nav-button" 
-          onClick={handlePrevWeek}
-          disabled={weekOffset <= -1}
-        >
-          &lt;
-        </button>
-        <div className="week-range-display">
-          {getWeekRangeDisplay()}
+      <div className="dashboard-header-container">
+        <h2 className="dashboard-title">Helicopter Passenger Dashboard</h2>
+        
+        <div className="week-nav-container">
+          <button 
+            className="nav-button" 
+            onClick={handlePrevWeek}
+          >
+            &lt;
+          </button>
+          <div className="week-range-display">
+            {getWeekRangeDisplay()}
+          </div>
+          <button 
+            className="nav-button" 
+            onClick={handleNextWeek}
+          >
+            &gt;
+          </button>
         </div>
-        <button 
-          className="nav-button" 
-          onClick={handleNextWeek}
-        >
-          &gt;
-        </button>
-        <LocationDropdown 
-          currentLocation={currentLocation} 
-          onLocationChange={setCurrentLocation} 
-        />
+        
+        <div className="location-dropdown-container">
+          <LocationDropdown 
+            currentLocation={currentLocation} 
+            onLocationChange={setCurrentLocation} 
+          />
+        </div>
       </div>
       
       <div className="days-header">
@@ -271,9 +273,7 @@ export default function HeliDashboard() {
       <div className="week-container">
         {weeksData.length > 0 ? (
           weeksData.map((week, weekIndex) => (
-            <div key={weekIndex} className="week-row" style={{
-              borderBottom: weekIndex < 2 ? '1px solid #ddd' : 'none'
-            }}>
+            <div key={weekIndex} className="week-row">
               <div className="row-header">
                 <div className="incoming-label">INCOMING</div>
                 <div className="outgoing-label">OUTGOING</div>
@@ -294,24 +294,26 @@ export default function HeliDashboard() {
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, day.date, 'incoming')}
                     >
-                      {day.incoming.map((trip, i) => (
-                        <div 
-                          key={i}
-                          onClick={() => setEditingTrip(trip)}
-                          className="passenger-card-container"
-                          draggable
-                          onDragStart={() => handleDragStart(trip, 'incoming')}
-                        >
-                          <PassengerCard
-                            firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                            lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                            jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                            fromOrigin={trip.fromOrigin}
-                            toDestination={trip.toDestination}
-                            type='incoming'
-                          />
-                        </div>
-                      ))}
+                      <div className="passenger-cards-container">
+                        {day.incoming.map((trip, i) => (
+                          <div 
+                            key={i}
+                            onClick={() => setEditingTrip(trip)}
+                            className="passenger-card-container"
+                            draggable
+                            onDragStart={() => handleDragStart(trip, 'incoming')}
+                          >
+                            <PassengerCard
+                              firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                              lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                              jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                              fromOrigin={trip.fromOrigin}
+                              toDestination={trip.toDestination}
+                              type='incoming'
+                            />
+                          </div>
+                        ))}
+                      </div>
                       <button
                         onClick={() => {
                           setSelectedCellDate(day.date);
@@ -331,24 +333,26 @@ export default function HeliDashboard() {
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, day.date, 'outgoing')}
                     >
-                      {day.outgoing.map((trip, i) => (
-                        <div 
-                          key={i}
-                          onClick={() => setEditingTrip(trip)}
-                          className="passenger-card-container"
-                          draggable
-                          onDragStart={() => handleDragStart(trip, 'outgoing')}
-                        >
-                          <PassengerCard
-                            firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                            lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                            jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                            fromOrigin={trip.fromOrigin}
-                            toDestination={trip.toDestination}
-                            type='outgoing'
-                          />
-                        </div>
-                      ))}
+                      <div className="passenger-cards-container">
+                        {day.outgoing.map((trip, i) => (
+                          <div 
+                            key={i}
+                            onClick={() => setEditingTrip(trip)}
+                            className="passenger-card-container"
+                            draggable
+                            onDragStart={() => handleDragStart(trip, 'outgoing')}
+                          >
+                            <PassengerCard
+                              firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                              lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                              jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                              fromOrigin={trip.fromOrigin}
+                              toDestination={trip.toDestination}
+                              type='outgoing'
+                            />
+                          </div>
+                        ))}
+                      </div>
                       <button
                         onClick={() => {
                           setSelectedCellDate(day.date);
