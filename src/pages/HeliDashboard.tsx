@@ -3,6 +3,7 @@ import { format, addWeeks, startOfWeek, endOfWeek, eachDayOfInterval } from 'dat
 import LocationDropdown from './LocationDropdown';
 import PassengerCard from './PassengerCard';
 import AddTripModal from './AddTripModal';
+import EditTripModal from './EditTripModal';
 
 // Export the Passenger interface so it can be used in AddTripModal.
 export interface Passenger {
@@ -12,12 +13,13 @@ export interface Passenger {
   jobRole: string;
 }
 
-interface Trip {
+export interface Trip {
   _id: string;
   passengerId: string;
   fromOrigin: string;
   toDestination: string;
   tripDate: string;
+  confirmed: boolean;
 }
 
 interface DayData {
@@ -38,6 +40,7 @@ export default function HeliDashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedCellDate, setSelectedCellDate] = useState<Date>(new Date());
   const [tripType, setTripType] = useState<'incoming' | 'outgoing'>('outgoing');
+  const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -175,6 +178,38 @@ export default function HeliDashboard() {
       console.error('Error adding trip:', error);
     }
   };
+
+  const handleUpdateTrip = async (updatedTrip: Trip) => {
+  try {
+    const response = await fetch(`https://wells-api.vercel.app/api/trips/${updatedTrip._id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedTrip),
+    });
+
+    if (!response.ok) throw new Error('Failed to update trip');
+
+    setTrips(trips.map(t => t._id === updatedTrip._id ? updatedTrip : t));
+  } catch (error) {
+    console.error('Error updating trip:', error);
+  }
+};
+
+const handleDeleteTrip = async (tripId: string) => {
+  try {
+    const response = await fetch(`https://wells-api.vercel.app/api/trips/${tripId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) throw new Error('Failed to delete trip');
+
+    setTrips(trips.filter(t => t._id !== tripId));
+  } catch (error) {
+    console.error('Error deleting trip:', error);
+  }
+};
 
   if (loading) {
     return <div style={{
@@ -338,15 +373,20 @@ export default function HeliDashboard() {
                       position: 'relative'
                     }}>
                       {day.incoming.map((trip, i) => (
-                        <PassengerCard
+                        <div 
                           key={i}
-                          firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                          lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                          jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                          fromOrigin={trip.fromOrigin}
-                          toDestination={trip.toDestination}
-                          type='incoming'
-                        />
+                          onClick={() => setEditingTrip(trip)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <PassengerCard
+                            firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                            lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                            jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                            fromOrigin={trip.fromOrigin}
+                            toDestination={trip.toDestination}
+                            type='incoming'
+                          />
+                        </div>
                       ))}
                       <button
                         onClick={() => {
@@ -370,6 +410,11 @@ export default function HeliDashboard() {
                       position: 'relative'
                     }}>
                       {day.outgoing.map((trip, i) => (
+                                                <div 
+                          key={i}
+                          onClick={() => setEditingTrip(trip)}
+                          style={{ cursor: 'pointer' }}
+                        >
                         <PassengerCard
                           key={i}
                           firstName={getPassengerById(trip.passengerId)?.firstName || ''}
@@ -378,7 +423,7 @@ export default function HeliDashboard() {
                           fromOrigin={trip.fromOrigin}
                           toDestination={trip.toDestination}
                           type='outgoing'
-                        />
+                        /></div>
                       ))}
                       <button
                         onClick={() => {
@@ -431,6 +476,15 @@ export default function HeliDashboard() {
   tripType={tripType}
   currentLocation={currentLocation}
   onSubmit={handleAddTrip}
+/>
+<EditTripModal
+  isOpen={editingTrip !== null}
+  onClose={() => setEditingTrip(null)}
+  passengers={passengers}
+  trip={editingTrip}
+  currentLocation={currentLocation}
+  onUpdate={handleUpdateTrip}
+  onDelete={handleDeleteTrip}
 />
     </div>
   );

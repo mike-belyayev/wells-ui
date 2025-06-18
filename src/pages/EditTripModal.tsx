@@ -1,49 +1,64 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import type { Passenger } from './HeliDashboard';
+import type { Passenger, Trip } from './HeliDashboard';
 import './AddTripModal.css';
 
-interface AddTripModalProps {
+interface EditTripModalProps {
   isOpen: boolean;
   onClose: () => void;
   passengers: Passenger[];
-  selectedDate: Date;
-  tripType: 'incoming' | 'outgoing';
+  trip: Trip | null;
   currentLocation: string;
-  onSubmit: (tripData: {
-    passengerId: string;
-    fromOrigin: string;
-    toDestination: string;
-    tripDate: string;
-    confirmed: boolean; // Add confirmed to the interface
-  }) => void;
+  onUpdate: (updatedTrip: Trip) => void;
+  onDelete: (tripId: string) => void;
 }
 
 const locations = ['NTM', 'Ogle', 'NSC', 'NDT', 'NBD', 'STC'];
 
-export default function AddTripModal({
+export default function EditTripModal({
   isOpen,
   onClose,
   passengers,
-  selectedDate,
-  tripType,
-  currentLocation,
-  onSubmit
-}: AddTripModalProps) {
+  trip,
+  onUpdate,
+  onDelete
+}: EditTripModalProps) {
   const [passengerSearch, setPassengerSearch] = useState('');
   const [selectedPassenger, setSelectedPassenger] = useState<Passenger | null>(null);
-  const [fromOrigin, setFromOrigin] = useState(tripType === 'outgoing' ? currentLocation : 'NTM');
-  const [toDestination, setToDestination] = useState(tripType === 'incoming' ? currentLocation : 'NSC');
-  const [tripDate, setTripDate] = useState(selectedDate);
-  const [confirmed, setConfirmed] = useState(false); // Add confirmed state
+  const [fromOrigin, setFromOrigin] = useState('NTM');
+  const [toDestination, setToDestination] = useState('NSC');
+  const [tripDate, setTripDate] = useState(new Date());
+  const [confirmed, setConfirmed] = useState(false);
   const [showPassengerList, setShowPassengerList] = useState(false);
-
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
   useEffect(() => {
-    setTripDate(selectedDate);
-    setFromOrigin(tripType === 'outgoing' ? currentLocation : 'NTM');
-    setToDestination(tripType === 'incoming' ? currentLocation : 'NSC');
-    setConfirmed(false); // Reset confirmed when date changes
-  }, [selectedDate, tripType, currentLocation]);
+    if (trip) {
+      const passenger = passengers.find(p => p._id === trip.passengerId);
+      setPassengerSearch(
+        passenger ? `${passenger.firstName} ${passenger.lastName}` : ''
+      );
+      setSelectedPassenger(passenger || null);
+      setFromOrigin(trip.fromOrigin);
+      setToDestination(trip.toDestination);
+      setTripDate(new Date(trip.tripDate));
+      setConfirmed(trip.confirmed || false);
+    }
+    
+    return () => {
+      setPassengerSearch('');
+      setSelectedPassenger(null);
+      setFromOrigin('NTM');
+      setToDestination('NSC');
+      setTripDate(new Date());
+      setConfirmed(false);
+      setError(null);
+      setIsUpdating(false);
+      setIsDeleting(false);
+    };
+  }, [trip, passengers]);
 
   const filteredPassengers = passengers.filter(passenger =>
     `${passenger.firstName} ${passenger.lastName}`
@@ -51,30 +66,99 @@ export default function AddTripModal({
       .includes(passengerSearch.toLowerCase())
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPassenger || fromOrigin === toDestination) return;
+    
+    if (isUpdating || !trip) return;
+    setIsUpdating(true);
+    setError(null);
+    
+    if (!selectedPassenger) {
+      setError('Please select a passenger');
+      setIsUpdating(false);
+      return;
+    }
+    if (fromOrigin === toDestination) {
+      setError('Origin and destination cannot be the same');
+      setIsUpdating(false);
+      return;
+    }
 
-    onSubmit({
+    const updatedTrip = {
+      ...trip,
       passengerId: selectedPassenger._id,
       fromOrigin,
       toDestination,
       tripDate: format(tripDate, 'yyyy-MM-dd'),
-      confirmed // Include confirmed in the submission
-    });
+      confirmed
+    };
+
+    try {
+      const response = await fetch(`https://wells-api.vercel.app/api/trips/${trip._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTrip),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update trip');
+      }
+
+      const data = await response.json();
+      onUpdate(data);
+      onClose();
+    } catch (error) {
+      console.error('Error updating trip:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update trip. Please try again.');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  if (!isOpen) return null;
+  const handleDelete = async () => {
+    if (isDeleting || !trip) return;
+    
+    setIsDeleting(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`https://wells-api.vercel.app/api/trips/${trip._id}`, {
+        method: 'DELETE',
+      });
+
+      // If the trip was already deleted (404), we still want to proceed
+      if (!response.ok && response.status !== 404) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete trip');
+      }
+
+      // Close the modal immediately
+      onClose();
+      
+      // Notify parent about deletion
+      onDelete(trip._id);
+    } catch (error) {
+      console.error('Error deleting trip:', error);
+      setError(error instanceof Error ? error.message : 'Failed to delete trip. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (!isOpen || !trip) return null;
 
   return (
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h3>Add New Trip</h3>
+          <h3>Edit Trip</h3>
           <button onClick={onClose} className="close-button">×</button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleUpdate}>
           <div className="form-group">
             <label className="label">Passenger</label>
             <div style={{ position: 'relative' }}>
@@ -118,8 +202,8 @@ export default function AddTripModal({
                 value={format(tripDate, 'yyyy-MM-dd')}
                 onChange={(e) => {
                   const selected = new Date(e.target.value);
-                  selected.setHours(selectedDate.getHours());
-                  selected.setMinutes(selectedDate.getMinutes());
+                  selected.setHours(tripDate.getHours());
+                  selected.setMinutes(tripDate.getMinutes());
                   setTripDate(selected);
                 }}
                 className="input"
@@ -171,13 +255,29 @@ export default function AddTripModal({
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={!selectedPassenger || fromOrigin === toDestination}
-            className="submit-button"
-          >
-            Add Trip
-          </button>
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
+          <div className="edit-modal-buttons">
+            <button
+              type="submit"
+              disabled={!selectedPassenger || fromOrigin === toDestination || isUpdating}
+              className="submit-button"
+            >
+              {isUpdating ? 'Updating...' : 'Update Trip'}
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="delete-button"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Trip'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
