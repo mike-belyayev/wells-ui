@@ -80,8 +80,9 @@ export default function HeliDashboard() {
   const generateWeeks = useCallback(() => {
     if (!trips.length || !passengers.length) return [];
 
-    return Array.from({ length: 3 }, (_, weekIndex) => {
-      const weekStart = startOfWeek(addWeeks(currentDate, (weekOffset * 3) + weekIndex - 1));
+    // Generate 3 weeks: previous, current, and next relative to the current offset
+    return [-1, 0, 1].map(relativeOffset => {
+      const weekStart = startOfWeek(addWeeks(currentDate, weekOffset + relativeOffset));
       const weekEnd = endOfWeek(weekStart);
       const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
       
