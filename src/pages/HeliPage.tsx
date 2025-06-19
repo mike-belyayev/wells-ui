@@ -32,7 +32,6 @@ interface DayData {
 
 const HeliPage = () => {
   const { logout } = useAuth();
-  const [currentDate] = useState(new Date());
   const [currentLocation, setCurrentLocation] = useState('NTM');
   const [passengers, setPassengers] = useState<Passenger[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -49,6 +48,10 @@ const HeliPage = () => {
   const [sectionHeights, setSectionHeights] = useState<{maxIncoming: number, maxOutgoing: number}[]>([]);
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const isToday = (date: Date) => {
+    return format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+  };
 
   const calculateMaxCardsPerWeek = (weeksData: DayData[][]) => {
     return weeksData.map(week => {
@@ -89,10 +92,8 @@ const HeliPage = () => {
   }, [fetchData]);
 
   const generateWeeks = useCallback(() => {
-    if (!trips.length || !passengers.length) return [];
-
     return [-1, 0, 1].map(relativeOffset => {
-      const weekStart = startOfWeek(addWeeks(currentDate, weekOffset + relativeOffset));
+      const weekStart = startOfWeek(addWeeks(new Date(), weekOffset + relativeOffset));
       const weekEnd = endOfWeek(weekStart);
       const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
       
@@ -118,7 +119,7 @@ const HeliPage = () => {
         };
       });
     });
-  }, [trips, passengers, currentLocation, currentDate, weekOffset]);
+  }, [trips, currentLocation, weekOffset]);
 
   useEffect(() => {
     const generatedWeeks = generateWeeks();
@@ -238,6 +239,10 @@ const HeliPage = () => {
     setWeekOffset(prev => prev + 1);
   };
 
+  const handleToday = () => {
+    setWeekOffset(0);
+  };
+
   const getWeekRangeDisplay = () => {
     if (weeksData.length === 0) return '';
     const firstWeek = weeksData[0][0].date;
@@ -255,33 +260,35 @@ const HeliPage = () => {
 
   return (
     <div className="dashboard-container">
-<div className="dashboard-header-container">
-  <h2 className="dashboard-title">Helicopter Passengers</h2>
-  
-  <div className="dashboard-controls">
-      <div className="week-nav-container">
-        <button className="nav-button" onClick={handlePrevWeek}>
-          &lt;
-        </button>
-        <div className="week-range-display">
-          {getWeekRangeDisplay()}
+      <div className="dashboard-header-container">
+        <h2 className="dashboard-title">Helicopter Passengers</h2>
+        
+        <div className="dashboard-controls">
+          <div className="week-nav-container">
+            <button className="nav-button" onClick={handlePrevWeek}>
+              &lt;
+            </button>
+            <button className="nav-button" onClick={handleToday}>
+              Today
+            </button>
+            <div className="week-range-display">
+              {getWeekRangeDisplay()}
+            </div>
+            <button className="nav-button" onClick={handleNextWeek}>
+              &gt;
+            </button>
+          </div>
         </div>
-        <button className="nav-button" onClick={handleNextWeek}>
-          &gt;
-        </button>
-      </div>
+        <div className="location-dropdown-container">
+          <LocationDropdown 
+            currentLocation={currentLocation} 
+            onLocationChange={setCurrentLocation} 
+          />
+          <button onClick={logout} className="logout-button">
+            Logout
+          </button>
         </div>
-      <div className="location-dropdown-container">
-        <LocationDropdown 
-          currentLocation={currentLocation} 
-          onLocationChange={setCurrentLocation} 
-        />
-    <button onClick={logout} className="logout-button">
-      Logout
-    </button>
       </div>
-    
-</div>
       
       <div className="days-header">
         <div className="corner-cell"></div>
@@ -311,7 +318,10 @@ const HeliPage = () => {
                   <div key={dayIndex} className="day-column" style={{
                     borderRight: dayIndex < 6 ? '1px solid #ddd' : 'none'
                   }}>
-                    <div className="date-header">
+                    <div className="date-header" style={{
+                      fontWeight: isToday(day.date) ? 'bold' : 'normal',
+                      color: isToday(day.date) ? '#1976d2' : 'inherit'
+                    }}>
                       {format(day.date, 'MMM d')}
                     </div>
                     
