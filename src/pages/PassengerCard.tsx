@@ -13,23 +13,27 @@ interface PassengerCardProps {
 export default function PassengerCard({ 
   firstName, 
   lastName, 
-  // jobRole, 
+  jobRole, 
   fromOrigin, 
   toDestination,
   type,
   confirmed
 }: PassengerCardProps) {
+  const fullName = `${firstName} ${lastName}`;
+  const tooltipContent = `
+    Name: ${fullName}
+    Role: ${jobRole || 'N/A'}
+    Route: ${fromOrigin} → ${toDestination}
+    Type: ${type}
+    Status: ${confirmed ? 'Confirmed' : 'Pending'}
+  `;
+
   return (
     <div className={`passenger-card ${type} ${confirmed ? 'confirmed' : 'unconfirmed'}`}>
       <div className="passenger-info">
-        <div className="passenger-name" title={`${firstName} ${lastName}`}>
+        <div className="passenger-name" data-tooltip={tooltipContent.trim()}>
           {firstName} {lastName}
         </div>
-        {/* {jobRole && (
-          <div className="passenger-job" title={jobRole}>
-            {jobRole}
-          </div>
-        )} */}
       </div>
       <div className="passenger-route">
         {type !== 'outgoing' && <span className="route-location">{fromOrigin}</span>}

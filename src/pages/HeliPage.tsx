@@ -281,29 +281,30 @@ const HeliPage = () => {
         
         <div className="dashboard-controls">
           <div className="week-nav-container">
-            <button className="nav-button" onClick={handlePrevWeek}>
-              &lt;
-            </button>
-            <button className="nav-button" onClick={handleToday}>
-              Today
-            </button>
-            <div className="week-range-display">
-              {getWeekRangeDisplay()}
-            </div>
-            <button className="nav-button" onClick={handleNextWeek}>
-              &gt;
-            </button>
+            {/* Week navigation buttons remain the same */}
+            <button className="nav-button" onClick={handlePrevWeek}>&lt;</button>
+            <button className="nav-button" onClick={handleToday}>Today</button>
+            <div className="week-range-display">{getWeekRangeDisplay()}</div>
+            <button className="nav-button" onClick={handleNextWeek}>&gt;</button>
           </div>
         </div>
-        <div className="location-dropdown-container">
+
+        <div className="user-controls">
           <LocationDropdown 
             currentLocation={currentLocation} 
             onLocationChange={setCurrentLocation} 
           />
+          
+          <div className="user-info">
+            <span className="user-email" title={user?.userEmail || ''}>
+              {user?.userEmail}
+            {isAdmin && "(admin)"}
+            </span>
+          </div>
+          
           <button onClick={logout} className="logout-button">
             Logout
           </button>
-          {isAdmin && <div className="admin-badge">ADMIN</div>}
         </div>
       </div>
       

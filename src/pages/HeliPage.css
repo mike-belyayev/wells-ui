@@ -257,22 +257,13 @@
 }
 
 .logout-button {
-  margin-left: 0.5rem;
   background-color: darkred;
   color: white;
   border: none;
 }
 
-
-/* Admin badge */
-.admin-badge {
-  background-color: #1976d2;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  margin-left: 10px;
-  font-weight: bold;
+.logout-button:hover {
+  background-color: red;
 }
 
 /* Readonly cards */
@@ -289,4 +280,24 @@
 .add-button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
+}
+
+.user-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-email {
+  font-size: 0.9rem;
+  color: lime;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
