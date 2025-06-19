@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box, TextField, Button, Typography, Paper, Alert, Link } from '@mui/material';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../auth/AuthContext';
 
 export default function LandingPage() {
   const [email, setEmail] = useState('');

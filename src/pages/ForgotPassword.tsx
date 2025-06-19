@@ -1,7 +1,7 @@
 // pages/ForgotPassword.tsx
 import { useState, type FormEvent } from 'react';
 import { Box, TextField, Button, Typography, Paper, Alert } from '@mui/material';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../auth/AuthContext';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');

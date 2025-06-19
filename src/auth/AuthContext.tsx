@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 type User = {
   userEmail: string;
@@ -23,94 +23,129 @@ type AuthContextType = {
     lastName: string;
     homeLocation: string;
   }) => Promise<void>;
-  requestPasswordReset: (email: string) => Promise<void>;
-  resetPassword: (token: string, newPassword: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<boolean>;
+   resetPassword: (token: string, newPassword: string) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Check for existing token on initial load
+  // Check authentication status on initial load and route changes
   useEffect(() => {
-    const initAuth = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          // Verify token with your API
-          const response = await fetch('https://wells-api.vercel.app/api/users/me', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          
-          if (response.ok) {
-            const userData = await response.json();
-            setUser({
-              userEmail: userData.userEmail,
-              isAdmin: userData.isAdmin,
-              firstName: userData.firstName,
-              lastName: userData.lastName,
-              homeLocation: userData.homeLocation,
-              token
-            });
-          } else {
-            localStorage.removeItem('token');
-          }
-        }
-      } catch (err) {
-        console.error('Auth initialization error:', err);
-        localStorage.removeItem('token');
-      } finally {
-        setIsLoading(false);
+// In your checkAuth function:
+const checkAuth = async () => {
+  setIsLoading(true);
+  try {
+    const token = localStorage.getItem('token');
+    console.log('Retrieved token:', token); // Debug log
+    
+    if (!token) {
+      console.log('No token available - logging out');
+      handleLogout();
+      return;
+    }
+
+    const response = await fetch('https://wells-api.vercel.app/api/users/me', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
-    };
+    });
 
-    initAuth();
-  }, []);
+    console.log('Auth check response status:', response.status); // Debug log
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Auth check failed:', response.status, errorData);
+      handleLogout();
+      return;
+    }
 
-  const login = async (userEmail: string, password: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch('https://wells-api.vercel.app/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userEmail, password })
-      });
+    const userData = await response.json();
+    console.log('User data received:', userData); // Debug log
+    
+    setUser({
+      userEmail: userData.userEmail,
+      isAdmin: userData.isAdmin,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      homeLocation: userData.homeLocation,
+      token
+    });
 
-      const data = await response.json();
+    if (location.pathname === '/') {
+      navigate(userData.isAdmin ? '/admin' : '/heli');
+    }
+  } catch (err) {
+    console.error('Auth check error:', err);
+    handleLogout();
+  } finally {
+    setIsLoading(false);
+  }
+};
+    checkAuth();
+  }, [location.pathname, navigate]);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-
-      localStorage.setItem('token', data.token);
-      setUser({
-        userEmail: data.user.userEmail,
-        isAdmin: data.user.isAdmin,
-        firstName: data.user.firstName,
-        lastName: data.user.lastName,
-        homeLocation: data.user.homeLocation,
-        token: data.token
-      });
-
-      // Redirect based on admin status
-      navigate(data.user.isAdmin ? '/admin' : '/heli');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-      throw err;
-    } finally {
-      setIsLoading(false);
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+    if (location.pathname !== '/') {
+      navigate('/');
     }
   };
+
+const login = async (userEmail: string, password: string) => {
+  setIsLoading(true);
+  setError(null);
+  try {
+    const response = await fetch('https://wells-api.vercel.app/api/users/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userEmail, password })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Login failed');
+    }
+
+    const data = await response.json();
+    console.log('Login response:', data); // Keep this for debugging
+
+    // Check if we have a token in either location
+    const authToken = data.token || 
+                     (data.user?.tokens?.length > 0 ? data.user.tokens[0].token : null);
+
+    if (!authToken) {
+      throw new Error('No authentication token received from server');
+    }
+
+    localStorage.setItem('token', authToken);
+    
+    setUser({
+      userEmail: data.user.userEmail,
+      isAdmin: data.user.isAdmin,
+      firstName: data.user.firstName,
+      lastName: data.user.lastName,
+      homeLocation: data.user.homeLocation,
+      token: authToken
+    });
+    
+    navigate(data.user.isAdmin ? '/admin' : '/heli');
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Login failed';
+    setError(message);
+    throw new Error(message);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -142,9 +177,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error(data.error || 'Registration failed');
       }
 
-      // Auto-login after registration if your API supports it
-      // Or just show success message
-      setError('Registration successful. Please wait for admin verification.');
+      return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
       throw err;
@@ -153,7 +186,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const requestPasswordReset = async (userEmail: string) => {
+  const requestPasswordReset = async (email: string) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -162,7 +195,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ userEmail })
+        body: JSON.stringify({ email })
       });
 
       if (!response.ok) {
@@ -170,7 +203,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error(data.error || 'Password reset failed');
       }
 
-      setError('Password reset email sent. Please check your inbox.');
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Password reset failed');
       throw err;
@@ -196,8 +229,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error(data.error || 'Password reset failed');
       }
 
-      setError('Password updated successfully. You can now login with your new password.');
-      navigate('/');
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Password reset failed');
       throw err;
