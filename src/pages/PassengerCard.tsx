@@ -13,7 +13,7 @@ interface PassengerCardProps {
 export default function PassengerCard({ 
   firstName, 
   lastName, 
-  jobRole, 
+  // jobRole, 
   fromOrigin, 
   toDestination,
   type,
@@ -21,18 +21,20 @@ export default function PassengerCard({
 }: PassengerCardProps) {
   return (
     <div className={`passenger-card ${type} ${confirmed ? 'confirmed' : 'unconfirmed'}`}>
-      <div>
-        <div className="passenger-name">
+      <div className="passenger-info">
+        <div className="passenger-name" title={`${firstName} ${lastName}`}>
           {firstName} {lastName}
         </div>
-        <div className="passenger-job">
-          {jobRole}
-        </div>
+        {/* {jobRole && (
+          <div className="passenger-job" title={jobRole}>
+            {jobRole}
+          </div>
+        )} */}
       </div>
       <div className="passenger-route">
-        <span>{fromOrigin}</span>
+        {type !== 'outgoing' && <span className="route-location">{fromOrigin}</span>}
         <span className={`route-arrow ${type}`}>→</span>
-        <span>{toDestination}</span>
+        {type !== 'incoming' && <span className="route-location">{toDestination}</span>}
       </div>
     </div>
   );

@@ -297,8 +297,8 @@ const generateWeeks = useCallback(() => {
       <div className="week-container">
         {weeksData.length > 0 ? (
           weeksData.map((week, weekIndex) => {
-            const incomingHeight = sectionHeights[weekIndex]?.maxIncoming * 2.5 + 2.5;
-            const outgoingHeight = sectionHeights[weekIndex]?.maxOutgoing * 2.5 + 2.5;
+            const incomingHeight = sectionHeights[weekIndex]?.maxIncoming * 1.5 + 3;
+            const outgoingHeight = sectionHeights[weekIndex]?.maxOutgoing * 1.5 + 3;
 
             return (
               <div key={weekIndex} className="week-row">
