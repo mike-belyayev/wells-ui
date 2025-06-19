@@ -80,7 +80,7 @@ const checkAuth = async () => {
     });
 
     if (location.pathname === '/') {
-      navigate(userData.isAdmin ? '/admin' : '/heli');
+      navigate('/heli');
     }
   } catch (err) {
     console.error('Auth check error:', err);

@@ -9,11 +9,6 @@ if (!rootElement) {
   throw new Error("Root element not found. Check your index.html")
 }
 
-// Add temporary debug styling
-rootElement.style.backgroundColor = 'yellow'
-rootElement.style.padding = '20px'
-rootElement.innerHTML += '<p>Temporary debug marker</p>'
-
 createRoot(rootElement).render(
   <StrictMode>
     <App />
