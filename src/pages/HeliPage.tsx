@@ -5,7 +5,7 @@ import LocationDropdown from './LocationDropdown';
 import PassengerCard from './PassengerCard';
 import AddTripModal from './AddTripModal';
 import EditTripModal from './EditTripModal';
-import './HeliDashboard.css';
+import './HeliPage.css';
 
 export interface Passenger {
   _id: string;
@@ -259,7 +259,6 @@ const HeliPage = () => {
   <h2 className="dashboard-title">Helicopter Passengers</h2>
   
   <div className="dashboard-controls">
-    <div className="dashboard-header-group">
       <div className="week-nav-container">
         <button className="nav-button" onClick={handlePrevWeek}>
           &lt;
@@ -271,19 +270,17 @@ const HeliPage = () => {
           &gt;
         </button>
       </div>
-      
+        </div>
       <div className="location-dropdown-container">
         <LocationDropdown 
           currentLocation={currentLocation} 
           onLocationChange={setCurrentLocation} 
         />
-      </div>
-    </div>
-    
     <button onClick={logout} className="logout-button">
       Logout
     </button>
-  </div>
+      </div>
+    
 </div>
       
       <div className="days-header">

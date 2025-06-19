@@ -13,19 +13,14 @@ export default function LocationDropdown({ currentLocation, onLocationChange }: 
   };
 
   return (
-    <div style={{
-      position: 'absolute',
-      top: '10px',
-      right: '10px',
-      zIndex: 100
-    }}>
+    <div>
       <select 
         value={currentLocation} 
         onChange={handleChange}
         style={{
           padding: '5px',
           borderRadius: '4px',
-          border: '1px solid #ddd'
+          fontWeight: 'bold'
         }}
       >
         {locations.map(location => (

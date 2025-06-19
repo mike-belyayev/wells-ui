@@ -20,8 +20,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
-  gap: 20px;
+  color: rgb(234, 249, 252);
+  background-color:#3b3c4a;
+  padding: 2px 5px;
 }
 
 .dashboard-title {
@@ -39,7 +40,8 @@
 }
 
 .location-dropdown-container {
-  min-width: 150px;
+  display: flex;
+  align-items: center;
 }
 
 .loading-container,
@@ -56,8 +58,8 @@
 
 .nav-button {
   padding: 5px 10px;
-  background-color: #2c3e50;
-  color: white;
+  background-color: #dbebff;
+  color: rgb(7, 14, 25);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -252,4 +254,11 @@
   overflow-y: auto;
   flex: 1;
   padding-bottom: 25px;
+}
+
+.logout-button {
+  margin-left: 0.5rem;
+  background-color: darkred;
+  color: white;
+  border: none;
 }
