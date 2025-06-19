@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import type { Passenger, Trip } from './HeliDashboard';
+import type { Passenger, Trip } from './HeliPage';
 import './AddTripModal.css';
 
 interface EditTripModalProps {
