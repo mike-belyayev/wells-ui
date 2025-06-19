@@ -86,27 +86,38 @@ export default function HeliDashboard() {
     fetchData();
   }, [fetchData]);
 
-  const generateWeeks = useCallback(() => {
-    if (!trips.length || !passengers.length) return [];
+const generateWeeks = useCallback(() => {
+  if (!trips.length || !passengers.length) return [];
 
-    return [-1, 0, 1].map(relativeOffset => {
-      const weekStart = startOfWeek(addWeeks(currentDate, weekOffset + relativeOffset));
-      const weekEnd = endOfWeek(weekStart);
-      const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  return [-1, 0, 1].map(relativeOffset => {
+    const weekStart = startOfWeek(addWeeks(currentDate, weekOffset + relativeOffset));
+    const weekEnd = endOfWeek(weekStart);
+    const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+    
+    return days.map(date => {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const relevantTrips = trips.filter(trip => trip.tripDate === dateStr);
       
-      return days.map(date => {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        const relevantTrips = trips.filter(trip => trip.tripDate === dateStr);
-        
-        return {
-          date,
-          incoming: relevantTrips.filter(trip => trip.toDestination === currentLocation),
-          outgoing: relevantTrips.filter(trip => trip.fromOrigin === currentLocation),
-          pob: Math.floor(Math.random() * 50) + 100
-        };
-      });
+      // Sort function to put confirmed trips first
+      const sortByConfirmed = (a: Trip, b: Trip) => {
+        if (a.confirmed && !b.confirmed) return -1;
+        if (!a.confirmed && b.confirmed) return 1;
+        return 0;
+      };
+      
+      return {
+        date,
+        incoming: relevantTrips
+          .filter(trip => trip.toDestination === currentLocation)
+          .sort(sortByConfirmed),
+        outgoing: relevantTrips
+          .filter(trip => trip.fromOrigin === currentLocation)
+          .sort(sortByConfirmed),
+        pob: Math.floor(Math.random() * 50) + 100
+      };
     });
-  }, [trips, passengers, currentLocation, currentDate, weekOffset]);
+  });
+}, [trips, passengers, currentLocation, currentDate, weekOffset]);
 
   useEffect(() => {
     const generatedWeeks = generateWeeks();
