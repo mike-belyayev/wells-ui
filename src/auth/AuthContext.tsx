@@ -137,7 +137,7 @@ const login = async (userEmail: string, password: string) => {
       token: authToken
     });
     
-    navigate(data.user.isAdmin ? '/admin' : '/heli');
+    navigate('/heli');
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Login failed';
     setError(message);
