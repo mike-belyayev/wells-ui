@@ -1,34 +1,29 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, TextField, Button, Typography, Paper, Alert } from '@mui/material';
+import { useState } from 'react';
+import { Box, TextField, Button, Typography, Paper, Alert, Link } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 
 export default function LandingPage() {
   const [email, setEmail] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
-  const { verifyEmail, user, isLoading } = useAuth();
+  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [homeLocation, setHomeLocation] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  const { login, register, error, isLoading } = useAuth();
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsVerifying(true);
     
-    try {
-      const userExists = await verifyEmail(email);
-      
-      if (userExists) {
-        // User found in database - proceed to appropriate page
-        navigate(user?.isAdmin ? '/admin' : '/heli');
-      } else {
-        // New user flow (optional)
-        navigate('/register'); // Or wherever you want new users to go
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Verification failed');
-    } finally {
-      setIsVerifying(false);
+    if (isLogin) {
+      await login(email, password);
+    } else {
+      await register({
+        userEmail: email,
+        password,
+        firstName,
+        lastName,
+        homeLocation
+      });
     }
   };
 
@@ -46,20 +41,12 @@ export default function LandingPage() {
         borderRadius: 2,
         boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)'
       }}>
-        <Typography 
-          variant="h4" 
-          gutterBottom 
-          sx={{ 
-            textAlign: 'center',
-            color: 'primary.main',
-            fontWeight: 600
-          }}
-        >
-          Enter Your Email
+        <Typography variant="h4" gutterBottom sx={{ textAlign: 'center', color: 'primary.main', fontWeight: 600 }}>
+          {isLogin ? 'Login' : 'Register'}
         </Typography>
         
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity={error.includes('successful') ? 'success' : 'error'} sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
@@ -73,30 +60,88 @@ export default function LandingPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            InputProps={{
-              sx: { borderRadius: 1 }
-            }}
           />
+          
+          <TextField
+            label="Password"
+            type="password"
+            fullWidth
+            margin="normal"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          {!isLogin && (
+            <>
+              <TextField
+                label="First Name"
+                fullWidth
+                margin="normal"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
+              
+              <TextField
+                label="Last Name"
+                fullWidth
+                margin="normal"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
+              
+              <TextField
+                label="Home Location"
+                fullWidth
+                margin="normal"
+                value={homeLocation}
+                onChange={(e) => setHomeLocation(e.target.value)}
+                required
+              />
+            </>
+          )}
+          
           <Button 
             type="submit" 
             variant="contained" 
             fullWidth 
-            sx={{ 
-              mt: 3,
-              py: 1.5,
-              fontSize: '1rem',
-              fontWeight: 600,
-              borderRadius: 1
-            }}
-            disabled={isLoading || isVerifying}
+            sx={{ mt: 3, py: 1.5 }}
+            disabled={isLoading}
           >
-            {isLoading || isVerifying ? 'Verifying...' : 'Continue'}
+            {isLoading ? 'Processing...' : (isLogin ? 'Login' : 'Register')}
           </Button>
         </form>
 
-        <Typography variant="body2" sx={{ mt: 3, textAlign: 'center', color: 'text.secondary' }}>
-          We'll check if you have an existing account.
-        </Typography>
+        <Box sx={{ mt: 2, textAlign: 'center' }}>
+          <Link 
+            component="button" 
+            variant="body2"
+            onClick={() => {
+              setIsLogin(!isLogin);
+              // setError('');
+            }}
+          >
+            {isLogin ? 'Need an account? Register' : 'Have an account? Login'}
+          </Link>
+        </Box>
+        
+        {isLogin && (
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+            <Link 
+              component="button"
+              variant="body2"
+              onClick={() => {
+                if (email) {
+                  // Implement forgot password flow
+                }
+              }}
+            >
+              Forgot password?
+            </Link>
+          </Box>
+        )}
       </Paper>
     </Box>
   );

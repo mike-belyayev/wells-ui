@@ -5,6 +5,7 @@ import HeliDashboard from './pages/HeliDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import type { ReactNode } from 'react';
+import { CircularProgress, Box } from '@mui/material';
 
 const theme = createTheme({
   palette: {
@@ -20,11 +21,19 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, adminOnly = false }: ProtectedRouteProps) => {
-  const { user } = useAuth();
-  const isAdmin = user?.isAdmin === true;
+  const { user, isLoading } = useAuth();
   
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   if (!user) return <Navigate to="/" />;
-  if (adminOnly && !isAdmin) return <Navigate to="/heli" />;
+  if (adminOnly && !user.isAdmin) return <Navigate to="/heli" />;
+  
   return <>{children}</>;
 };
 
@@ -32,16 +41,30 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
-        <Router>
+      <Router>
+        <AuthProvider>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/heli" element={<ProtectedRoute><HeliDashboard /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+            <Route 
+              path="/heli" 
+              element={
+                <ProtectedRoute>
+                  <HeliDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute adminOnly>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-        </Router>
-      </AuthProvider>
+        </AuthProvider>
+      </Router>
     </ThemeProvider>
   );
 }
