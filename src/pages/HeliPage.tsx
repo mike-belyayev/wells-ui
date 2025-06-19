@@ -311,9 +311,7 @@ const HeliPage = () => {
       <div className="days-header">
         <div className="corner-cell"></div>
         {daysOfWeek.map((day, index) => (
-          <div key={index} className="day-cell" style={{ 
-            borderRight: index < 6 ? '1px solid #3d5166' : 'none'
-          }}>
+          <div key={index} className="day-cell">
             {day}
           </div>
         ))}

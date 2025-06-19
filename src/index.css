@@ -5,11 +5,13 @@
   font-weight: 400;
   color: #333333;
   background-color: #ffffff;
+  padding: 0;
 }
 
 body {
   margin: 0;
-  min-width: 320px;
+  padding: 0;
+  min-width: 480px;
   min-height: 100vh;
 }
 
