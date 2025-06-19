@@ -262,3 +262,31 @@
   color: white;
   border: none;
 }
+
+
+/* Admin badge */
+.admin-badge {
+  background-color: #1976d2;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin-left: 10px;
+  font-weight: bold;
+}
+
+/* Readonly cards */
+.passenger-card-container.readonly {
+  cursor: default !important;
+}
+
+.passenger-card-container.readonly:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Disabled add button */
+.add-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}

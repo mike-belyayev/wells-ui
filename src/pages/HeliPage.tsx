@@ -31,7 +31,8 @@ interface DayData {
 }
 
 const HeliPage = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const isAdmin = user?.isAdmin || false;
   const [currentLocation, setCurrentLocation] = useState('NTM');
   const [passengers, setPassengers] = useState<Passenger[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -42,7 +43,7 @@ const HeliPage = () => {
   const [selectedCellDate, setSelectedCellDate] = useState<Date>(new Date());
   const [tripType, setTripType] = useState<'incoming' | 'outgoing'>('outgoing');
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [weekOffset, setWeekOffset] = useState(1);
   const [draggedTrip, setDraggedTrip] = useState<Trip | null>(null);
   const [dragType, setDragType] = useState<'incoming' | 'outgoing' | null>(null);
   const [sectionHeights, setSectionHeights] = useState<{maxIncoming: number, maxOutgoing: number}[]>([]);
@@ -139,11 +140,14 @@ const HeliPage = () => {
     toDestination: string;
     tripDate: string;
   }) => {
+    if (!isAdmin) return;
+    
     try {
       const response = await fetch('https://wells-api.vercel.app/api/trips', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
         },
         body: JSON.stringify(tripData),
       });
@@ -159,11 +163,14 @@ const HeliPage = () => {
   };
 
   const handleUpdateTrip = async (updatedTrip: Trip) => {
+    if (!isAdmin) return;
+    
     try {
       const response = await fetch(`https://wells-api.vercel.app/api/trips/${updatedTrip._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
         },
         body: JSON.stringify(updatedTrip),
       });
@@ -178,11 +185,16 @@ const HeliPage = () => {
   };
 
   const handleDeleteTrip = async (tripId: string) => {
+    if (!isAdmin) return;
+    
     try {
       setTrips(prevTrips => prevTrips.filter(t => t._id !== tripId));
       
       const response = await fetch(`https://wells-api.vercel.app/api/trips/${tripId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user?.token}`
+        }
       });
 
       if (!response.ok && response.status !== 404) {
@@ -199,11 +211,13 @@ const HeliPage = () => {
   };
 
   const handleDragStart = (trip: Trip, type: 'incoming' | 'outgoing') => {
+    if (!isAdmin) return;
     setDraggedTrip(trip);
     setDragType(type);
   };
 
   const handleDragOver = (e: React.DragEvent, _date: Date, type: 'incoming' | 'outgoing') => {
+    if (!isAdmin) return;
     if (dragType === type) {
       e.preventDefault();
       e.currentTarget.classList.add('drop-target');
@@ -215,6 +229,8 @@ const HeliPage = () => {
   };
 
   const handleDrop = async (e: React.DragEvent, date: Date, type: 'incoming' | 'outgoing') => {
+    if (!isAdmin) return;
+    
     e.currentTarget.classList.remove('drop-target');
     
     if (!draggedTrip || dragType !== type) return;
@@ -240,7 +256,7 @@ const HeliPage = () => {
   };
 
   const handleToday = () => {
-    setWeekOffset(0);
+    setWeekOffset(1);
   };
 
   const getWeekRangeDisplay = () => {
@@ -287,6 +303,7 @@ const HeliPage = () => {
           <button onClick={logout} className="logout-button">
             Logout
           </button>
+          {isAdmin && <div className="admin-badge">ADMIN</div>}
         </div>
       </div>
       
@@ -329,18 +346,18 @@ const HeliPage = () => {
                       <div 
                         className="incoming-section"
                         style={{ minHeight: `${incomingHeight}rem` }}
-                        onDragOver={(e) => handleDragOver(e, day.date, 'incoming')}
+                        onDragOver={(e) => isAdmin && handleDragOver(e, day.date, 'incoming')}
                         onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, day.date, 'incoming')}
+                        onDrop={(e) => isAdmin && handleDrop(e, day.date, 'incoming')}
                       >
                         <div className="passenger-cards-container">
                           {day.incoming.map((trip, i) => (
                             <div 
                               key={i}
-                              onClick={() => setEditingTrip(trip)}
-                              className="passenger-card-container"
-                              draggable
-                              onDragStart={() => handleDragStart(trip, 'incoming')}
+                              onClick={() => isAdmin && setEditingTrip(trip)}
+                              className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
+                              draggable={isAdmin}
+                              onDragStart={() => isAdmin && handleDragStart(trip, 'incoming')}
                             >
                               <PassengerCard
                                 firstName={getPassengerById(trip.passengerId)?.firstName || ''}
@@ -354,34 +371,36 @@ const HeliPage = () => {
                             </div>
                           ))}
                         </div>
-                        <button
-                          onClick={() => {
-                            setSelectedCellDate(day.date);
-                            setModalOpen(true);
-                            setTripType('incoming');
-                          }}
-                          className="add-button"
-                          title="Add incoming passenger"
-                        >
-                          +
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setSelectedCellDate(day.date);
+                              setModalOpen(true);
+                              setTripType('incoming');
+                            }}
+                            className="add-button"
+                            title="Add incoming passenger"
+                          >
+                            +
+                          </button>
+                        )}
                       </div>
                       
                       <div 
                         className="outgoing-section"
                         style={{ minHeight: `${outgoingHeight}rem` }}
-                        onDragOver={(e) => handleDragOver(e, day.date, 'outgoing')}
+                        onDragOver={(e) => isAdmin && handleDragOver(e, day.date, 'outgoing')}
                         onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, day.date, 'outgoing')}
+                        onDrop={(e) => isAdmin && handleDrop(e, day.date, 'outgoing')}
                       >
                         <div className="passenger-cards-container">
                           {day.outgoing.map((trip, i) => (
                             <div 
                               key={i}
-                              onClick={() => setEditingTrip(trip)}
-                              className="passenger-card-container"
-                              draggable
-                              onDragStart={() => handleDragStart(trip, 'outgoing')}
+                              onClick={() => isAdmin && setEditingTrip(trip)}
+                              className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
+                              draggable={isAdmin}
+                              onDragStart={() => isAdmin && handleDragStart(trip, 'outgoing')}
                             >
                               <PassengerCard
                                 firstName={getPassengerById(trip.passengerId)?.firstName || ''}
@@ -395,17 +414,19 @@ const HeliPage = () => {
                             </div>
                           ))}
                         </div>
-                        <button
-                          onClick={() => {
-                            setSelectedCellDate(day.date);
-                            setModalOpen(true);
-                            setTripType('outgoing');
-                          }}
-                          className="add-button"
-                          title="Add outgoing passenger"
-                        >
-                          +
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setSelectedCellDate(day.date);
+                              setModalOpen(true);
+                              setTripType('outgoing');
+                            }}
+                            className="add-button"
+                            title="Add outgoing passenger"
+                          >
+                            +
+                          </button>
+                        )}
                       </div>
                     </div>
                     
@@ -424,24 +445,28 @@ const HeliPage = () => {
         )}
       </div>
 
-      <AddTripModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        passengers={passengers}
-        selectedDate={selectedCellDate}
-        tripType={tripType}
-        currentLocation={currentLocation}
-        onSubmit={handleAddTrip}
-      />
-      <EditTripModal
-        isOpen={editingTrip !== null}
-        onClose={() => setEditingTrip(null)}
-        passengers={passengers}
-        trip={editingTrip}
-        currentLocation={currentLocation}
-        onUpdate={handleUpdateTrip}
-        onDelete={handleDeleteTrip}
-      />
+      {isAdmin && (
+        <>
+          <AddTripModal
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            passengers={passengers}
+            selectedDate={selectedCellDate}
+            tripType={tripType}
+            currentLocation={currentLocation}
+            onSubmit={handleAddTrip}
+          />
+          <EditTripModal
+            isOpen={editingTrip !== null}
+            onClose={() => setEditingTrip(null)}
+            passengers={passengers}
+            trip={editingTrip}
+            currentLocation={currentLocation}
+            onUpdate={handleUpdateTrip}
+            onDelete={handleDeleteTrip}
+          />
+        </>
+      )}
     </div>
   );
 };
