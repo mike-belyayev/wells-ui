@@ -12,12 +12,22 @@
   height: 2.5rem;
 }
 
-.passenger-card.incoming {
+/* Confirmed cards - full color */
+.passenger-card.incoming.confirmed {
   background-color: #2e7d32; /* Dark green for incoming */
 }
 
-.passenger-card.outgoing {
+.passenger-card.outgoing.confirmed {
   background-color: #1565c0; /* Dark blue for outgoing */
+}
+
+/* Unconfirmed cards - duller versions */
+.passenger-card.incoming.unconfirmed {
+  background-color: rgba(46, 125, 50, 0.6); /* Semi-transparent green */
+}
+
+.passenger-card.outgoing.unconfirmed {
+  background-color: rgba(21, 101, 192, 0.6); /* Semi-transparent blue */
 }
 
 .passenger-name {

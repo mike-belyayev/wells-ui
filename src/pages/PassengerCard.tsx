@@ -7,6 +7,7 @@ interface PassengerCardProps {
   fromOrigin: string;
   toDestination: string;
   type: 'incoming' | 'outgoing';
+  confirmed: boolean;
 }
 
 export default function PassengerCard({ 
@@ -15,10 +16,11 @@ export default function PassengerCard({
   jobRole, 
   fromOrigin, 
   toDestination,
-  type 
+  type,
+  confirmed
 }: PassengerCardProps) {
   return (
-    <div className={`passenger-card ${type}`}>
+    <div className={`passenger-card ${type} ${confirmed ? 'confirmed' : 'unconfirmed'}`}>
       <div>
         <div className="passenger-name">
           {firstName} {lastName}
