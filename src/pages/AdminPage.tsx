@@ -87,7 +87,7 @@ const AdminPage = () => {
     users: false,
     unverified: false
   });
-  const [setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [currentItem, setCurrentItem] = useState<PassengerForm | UserForm | null>(null);
   const [isEditing, setIsEditing] = useState(false);
