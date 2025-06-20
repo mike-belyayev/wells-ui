@@ -151,21 +151,9 @@ const AdminPage = () => {
         password: '',
         confirmPassword: ''
       } as UserForm);
-    } else if (!item && activeTab === 1) {
-      setCurrentItem({
-        _id: '',
-        userEmail: '',
-        password: '',
-        confirmPassword: '',
-        firstName: '',
-        lastName: '',
-        homeLocation: '',
-        isAdmin: false,
-        isVerified: true
-      });
     } else if (item && activeTab === 0) {
       setCurrentItem(item as PassengerForm);
-    } else {
+    } else if (activeTab === 0) {
       setCurrentItem({
         _id: '',
         firstName: '',
@@ -485,7 +473,7 @@ const AdminPage = () => {
 
                 {activeTab === 1 && (
                   <>
-                    <Box display="flex" justifyContent="space-between" mb={2} alignItems="center">
+                    <Box display="flex" justifyContent="flex-start" mb={2}>
                       <TextField
                         variant="outlined"
                         size="small"
@@ -497,13 +485,6 @@ const AdminPage = () => {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
-                      <Button
-                        variant="contained"
-                        startIcon={<Add />}
-                        onClick={() => handleOpenDialog()}
-                      >
-                        Add User
-                      </Button>
                     </Box>
                     <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
                       <Table stickyHeader>
