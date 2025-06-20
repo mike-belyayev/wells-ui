@@ -37,7 +37,8 @@ import {
   Check,
   Close,
   Person,
-  People
+  People,
+  Search
 } from '@mui/icons-material';
 
 interface Passenger {
@@ -97,6 +98,7 @@ const AdminPage = () => {
     message: '',
     severity: 'success' as 'success' | 'error'
   });
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch data based on active tab
   useEffect(() => {
@@ -286,6 +288,36 @@ const AdminPage = () => {
     }
   };
 
+  const filterPassengers = (passenger: Passenger) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    const firstName = passenger.firstName?.toLowerCase() || '';
+    const lastName = passenger.lastName?.toLowerCase() || '';
+    const jobRole = passenger.jobRole?.toLowerCase() || '';
+    return (
+      firstName.includes(term) ||
+      lastName.includes(term) ||
+      jobRole.includes(term)
+    );
+  };
+
+  const filterUsers = (user: User) => {
+    if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      const email = user.userEmail?.toLowerCase() || '';
+      const firstName = user.firstName?.toLowerCase() || '';
+      const lastName = user.lastName?.toLowerCase() || '';
+      const homeLocation = user.homeLocation?.toLowerCase() || '';
+      const adminStatus = user.isAdmin ? 'admin' : '';
+    return (
+        email.includes(term) ||
+        firstName.includes(term) ||
+        lastName.includes(term) ||
+        homeLocation.includes(term) ||
+        adminStatus.includes(term)
+    );
+  };
+
   return (
     <Box sx={{ minHeight: '100vh' }}>
       {/* Dark mode header */}
@@ -294,7 +326,7 @@ const AdminPage = () => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Admin Dashboard
           </Typography>
-                    <IconButton 
+          <IconButton 
             color="inherit" 
             onClick={() => navigate('/heli')} 
             sx={{ ml: 2 }}
@@ -305,15 +337,15 @@ const AdminPage = () => {
             {user?.userEmail}
           </Typography>
 
-          <Button variant="text" onClick={logout}   color="inherit"  size="small"
-        sx={{ 
-          textTransform: 'none',
-          ml: 1,
-          '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.08)'
-          }
-        }}
-      >
+          <Button variant="text" onClick={logout} color="inherit" size="small"
+            sx={{ 
+              textTransform: 'none',
+              ml: 1,
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)'
+              }
+            }}
+          >
             Logout
           </Button>
         </Toolbar>
@@ -343,7 +375,18 @@ const AdminPage = () => {
               <>
                 {activeTab === 0 && (
                   <>
-                    <Box display="flex" justifyContent="flex-end" mb={2}>
+                    <Box display="flex" justifyContent="space-between" mb={2} alignItems="center">
+                      <TextField
+                        variant="outlined"
+                        size="small"
+                        placeholder="Search passengers..."
+                        InputProps={{
+                          startAdornment: <Search color="action" sx={{ mr: 1 }} />
+                        }}
+                        sx={{ width: 300 }}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
                       <Button
                         variant="contained"
                         startIcon={<Add />}
@@ -357,8 +400,8 @@ const AdminPage = () => {
                         Add Passenger
                       </Button>
                     </Box>
-                    <TableContainer>
-                      <Table>
+                    <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
+                      <Table stickyHeader>
                         <TableHead>
                           <TableRow>
                             <TableCell>First Name</TableCell>
@@ -368,7 +411,7 @@ const AdminPage = () => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {passengers.map((passenger) => (
+                          {passengers.filter(filterPassengers).map((passenger) => (
                             <TableRow key={passenger._id}>
                               <TableCell>{passenger.firstName}</TableCell>
                               <TableCell>{passenger.lastName}</TableCell>
@@ -397,7 +440,18 @@ const AdminPage = () => {
 
                 {activeTab === 1 && (
                   <>
-                    <Box display="flex" justifyContent="flex-end" mb={2}>
+                    <Box display="flex" justifyContent="space-between" mb={2} alignItems="center">
+                      <TextField
+                        variant="outlined"
+                        size="small"
+                        placeholder="Search users..."
+                        InputProps={{
+                          startAdornment: <Search color="action" sx={{ mr: 1 }} />
+                        }}
+                        sx={{ width: 300 }}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
                       <Button
                         variant="contained"
                         startIcon={<Add />}
@@ -414,8 +468,8 @@ const AdminPage = () => {
                         Add User
                       </Button>
                     </Box>
-                    <TableContainer>
-                      <Table>
+                    <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
+                      <Table stickyHeader>
                         <TableHead>
                           <TableRow>
                             <TableCell>Email</TableCell>
@@ -427,7 +481,7 @@ const AdminPage = () => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {users.map((user) => (
+                          {users.filter(filterUsers).map((user) => (
                             <TableRow key={user._id}>
                               <TableCell>{user.userEmail}</TableCell>
                               <TableCell>{user.firstName}</TableCell>
@@ -459,39 +513,54 @@ const AdminPage = () => {
                 )}
 
                 {activeTab === 2 && (
-                  <TableContainer>
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Email</TableCell>
-                          <TableCell>First Name</TableCell>
-                          <TableCell>Last Name</TableCell>
-                          <TableCell>Location</TableCell>
-                          <TableCell>Actions</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {unverifiedUsers.map((user) => (
-                          <TableRow key={user._id}>
-                            <TableCell>{user.userEmail}</TableCell>
-                            <TableCell>{user.firstName}</TableCell>
-                            <TableCell>{user.lastName}</TableCell>
-                            <TableCell>{user.homeLocation}</TableCell>
-                            <TableCell>
-                              <Button
-                                variant="contained"
-                                color="success"
-                                startIcon={<Check />}
-                                onClick={() => handleVerifyUser(user._id)}
-                              >
-                                Verify
-                              </Button>
-                            </TableCell>
+                  <>
+                    <Box display="flex" justifyContent="flex-start" mb={2}>
+                      <TextField
+                        variant="outlined"
+                        size="small"
+                        placeholder="Search unverified users..."
+                        InputProps={{
+                          startAdornment: <Search color="action" sx={{ mr: 1 }} />
+                        }}
+                        sx={{ width: 300 }}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </Box>
+                    <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
+                      <Table stickyHeader>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Email</TableCell>
+                            <TableCell>First Name</TableCell>
+                            <TableCell>Last Name</TableCell>
+                            <TableCell>Location</TableCell>
+                            <TableCell>Actions</TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+                        </TableHead>
+                        <TableBody>
+                          {unverifiedUsers.filter(filterUsers).map((user) => (
+                            <TableRow key={user._id}>
+                              <TableCell>{user.userEmail}</TableCell>
+                              <TableCell>{user.firstName}</TableCell>
+                              <TableCell>{user.lastName}</TableCell>
+                              <TableCell>{user.homeLocation}</TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="contained"
+                                  color="success"
+                                  startIcon={<Check />}
+                                  onClick={() => handleVerifyUser(user._id)}
+                                >
+                                  Verify
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </>
                 )}
               </>
             )}
