@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format, addWeeks, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { AppBar, Toolbar, IconButton, Typography, Box, Button } from '@mui/material';
+import { Settings, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import LocationDropdown from './LocationDropdown';
 import PassengerCard from './PassengerCard';
@@ -47,6 +50,8 @@ const HeliPage = () => {
   const [draggedTrip, setDraggedTrip] = useState<Trip | null>(null);
   const [dragType, setDragType] = useState<'incoming' | 'outgoing' | null>(null);
   const [sectionHeights, setSectionHeights] = useState<{maxIncoming: number, maxOutgoing: number}[]>([]);
+
+  const navigate = useNavigate();
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -274,39 +279,79 @@ const HeliPage = () => {
     return <div className="error-container">Error: {error}</div>;
   }
 
-  return (
-    <div className="dashboard-container">
-      <div className="dashboard-header-container">
-        <h2 className="dashboard-title">Helicopter Passengers</h2>
-        
-        <div className="dashboard-controls">
-          <div className="week-nav-container">
-            {/* Week navigation buttons remain the same */}
-            <button className="nav-button" onClick={handlePrevWeek}>&lt;</button>
-            <button className="nav-button" onClick={handleToday}>Today</button>
-            <div className="week-range-display">{getWeekRangeDisplay()}</div>
-            <button className="nav-button" onClick={handleNextWeek}>&gt;</button>
-          </div>
-        </div>
+return (
+  <div className="dashboard-container">
+    <AppBar position="static" color="default" elevation={1}>
+      <Toolbar sx={{ justifyContent: 'space-between', gap: 2 }}>
+        {/* Left section - Title and Calendar */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h6" component="h1" sx={{ fontWeight: 'bold' }}>
+            Helicopter Passengers
+          </Typography>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton onClick={handlePrevWeek} size="small">
+              <ChevronLeft />
+            </IconButton>
+            
+            <Button 
+              variant="outlined" 
+              size="small" 
+              onClick={handleToday}
+              sx={{ textTransform: 'none' }}
+            >
+              Today
+            </Button>
+            
+            <Typography variant="body2" sx={{ minWidth: 150, textAlign: 'center' }}>
+              {getWeekRangeDisplay()}
+            </Typography>
+            
+            <IconButton onClick={handleNextWeek} size="small">
+              <ChevronRight />
+            </IconButton>
+          </Box>
+        </Box>
 
-        <div className="user-controls">
+        {/* Middle section - Location dropdown */}
+        <Box sx={{ flex: 1, maxWidth: 200 }}>
           <LocationDropdown 
             currentLocation={currentLocation} 
-            onLocationChange={setCurrentLocation} 
+            onLocationChange={setCurrentLocation}
+            size="small"
           />
+        </Box>
+
+        {/* Right section - User controls */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {isAdmin && (
+            <IconButton 
+              color="inherit" 
+              onClick={() => navigate('/admin')}
+              title="Admin Settings"
+              sx={{ p: 1 }}
+            >
+              <Settings />
+            </IconButton>
+          )}
           
-          <div className="user-info">
-            <span className="user-email" title={user?.userEmail || ''}>
-              {user?.userEmail}
-            {isAdmin && "(admin)"}
-            </span>
-          </div>
+          <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
+            {user?.userEmail}
+            {isAdmin && " (admin)"}
+          </Typography>
           
-          <button onClick={logout} className="logout-button">
+          <Button 
+            variant="text" 
+            color="inherit" 
+            onClick={logout}
+            size="small"
+            sx={{ textTransform: 'none', ml: 1 }}
+          >
             Logout
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Box>
+      </Toolbar>
+    </AppBar>
       
       <div className="days-header">
         <div className="corner-cell"></div>
