@@ -281,77 +281,145 @@ const HeliPage = () => {
 
 return (
   <div className="dashboard-container">
-    <AppBar position="static" color="default" elevation={1}>
-      <Toolbar sx={{ justifyContent: 'space-between', gap: 2 }}>
-        {/* Left section - Title and Calendar */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h6" component="h1" sx={{ fontWeight: 'bold' }}>
-            Helicopter Passengers
-          </Typography>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton onClick={handlePrevWeek} size="small">
-              <ChevronLeft />
-            </IconButton>
-            
-            <Button 
-              variant="outlined" 
-              size="small" 
-              onClick={handleToday}
-              sx={{ textTransform: 'none' }}
-            >
-              Today
-            </Button>
-            
-            <Typography variant="body2" sx={{ minWidth: 150, textAlign: 'center' }}>
-              {getWeekRangeDisplay()}
-            </Typography>
-            
-            <IconButton onClick={handleNextWeek} size="small">
-              <ChevronRight />
-            </IconButton>
-          </Box>
-        </Box>
+<AppBar 
+  position="static" 
+  sx={{ 
+    backgroundColor: '#121212', // Dark background
+    color: 'white', // Light text
+    backgroundImage: 'none', // Remove default gradient
+    boxShadow: 'none',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.12)' // Subtle divider
+  }}
+>
+  <Toolbar sx={{ 
+    justifyContent: 'space-between', 
+    gap: 2,
+    minHeight: '64px' // Ensure consistent height
+  }}>
+    {/* Left section - Title and Calendar */}
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Typography variant="h6" component="h1" sx={{ fontWeight: 'bold' }}>
+        Helicopter Passengers
+      </Typography>
+      
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 1,
+        '& .MuiButton-root': {
+          color: 'white',
+          borderColor: 'rgba(255, 255, 255, 0.23)',
+          '&:hover': {
+            borderColor: 'white'
+          }
+        },
+        '& .MuiIconButton-root': {
+          color: 'white'
+        }
+      }}>
+        <IconButton onClick={handlePrevWeek} size="small">
+          <ChevronLeft />
+        </IconButton>
+        
+        <Button 
+          variant="outlined" 
+          size="small" 
+          onClick={handleToday}
+          sx={{ textTransform: 'none' }}
+        >
+          Today
+        </Button>
+        
+        <Typography variant="body2" sx={{ 
+          minWidth: 150, 
+          textAlign: 'center',
+          color: 'rgba(255, 255, 255, 0.7)' // Slightly muted
+        }}>
+          {getWeekRangeDisplay()}
+        </Typography>
+        
+        <IconButton onClick={handleNextWeek} size="small">
+          <ChevronRight />
+        </IconButton>
+      </Box>
+    </Box>
 
-        {/* Middle section - Location dropdown */}
-        <Box sx={{ flex: 1, maxWidth: 200 }}>
-          <LocationDropdown 
-            currentLocation={currentLocation} 
-            onLocationChange={setCurrentLocation}
-            size="small"
-          />
-        </Box>
+    {/* Middle section - Location dropdown */}
+    <Box sx={{ 
+      flex: 1, 
+      maxWidth: 200,
+      '& .MuiInputLabel-root': {
+        color: 'rgba(255, 255, 255, 0.7)'
+      },
+      '& .MuiOutlinedInput-root': {
+        color: 'white',
+        '& fieldset': {
+          borderColor: 'rgba(255, 255, 255, 0.23)'
+        },
+        '&:hover fieldset': {
+          borderColor: 'white'
+        }
+      },
+      '& .MuiSelect-icon': {
+        color: 'white'
+      }
+    }}>
+      <LocationDropdown 
+        currentLocation={currentLocation} 
+        onLocationChange={setCurrentLocation}
+        size="small"
+      />
+    </Box>
 
-        {/* Right section - User controls */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {isAdmin && (
-            <IconButton 
-              color="inherit" 
-              onClick={() => navigate('/admin')}
-              title="Admin Settings"
-              sx={{ p: 1 }}
-            >
-              <Settings />
-            </IconButton>
-          )}
-          
-          <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
-            {user?.userEmail}
-            {isAdmin && " (admin)"}
-          </Typography>
-          
-          <Button 
-            variant="text" 
-            color="inherit" 
-            onClick={logout}
-            size="small"
-            sx={{ textTransform: 'none', ml: 1 }}
-          >
-            Logout
-          </Button>
-        </Box>
-      </Toolbar>
-    </AppBar>
+    {/* Right section - User controls */}
+    <Box sx={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: 2,
+      '& .MuiButton-root': {
+        color: 'white'
+      }
+    }}>
+      {isAdmin && (
+        <IconButton 
+          onClick={() => navigate('/admin')}
+          title="Admin Settings"
+          sx={{ 
+            color: 'white',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.08)'
+            }
+          }}
+        >
+          <Settings />
+        </IconButton>
+      )}
+      
+      <Typography variant="body2" noWrap sx={{ 
+        maxWidth: 300,
+        color: 'white'
+      }}>
+        {user?.userEmail}
+        {isAdmin && " (admin)"}
+      </Typography>
+      
+      <Button 
+        variant="text" 
+        onClick={logout}
+        size="small"
+        sx={{ 
+          textTransform: 'none',
+          ml: 1,
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)'
+          }
+        }}
+      >
+        Logout
+      </Button>
+    </Box>
+  </Toolbar>
+</AppBar>
       
       <div className="days-header">
         <div className="corner-cell"></div>
