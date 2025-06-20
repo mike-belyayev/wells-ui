@@ -1,7 +1,33 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Checkbox,
+  FormControlLabel,
+  Button,
+  CircularProgress,
+  Autocomplete,
+  Alert
+} from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import type { Passenger, Trip } from './HeliPage';
-import './AddTripModal.css';
+
+// Helper function to normalize dates (fix timezone issues)
+const normalizeDate = (dateString: string) => {
+  // Parse the date in local time but ignore timezone offset
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
 
 interface EditTripModalProps {
   isOpen: boolean;
@@ -27,9 +53,8 @@ export default function EditTripModal({
   const [selectedPassenger, setSelectedPassenger] = useState<Passenger | null>(null);
   const [fromOrigin, setFromOrigin] = useState('NTM');
   const [toDestination, setToDestination] = useState('NSC');
-  const [tripDate, setTripDate] = useState(new Date());
+  const [tripDate, setTripDate] = useState<Date | null>(new Date());
   const [confirmed, setConfirmed] = useState(false);
-  const [showPassengerList, setShowPassengerList] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +68,8 @@ export default function EditTripModal({
       setSelectedPassenger(passenger || null);
       setFromOrigin(trip.fromOrigin);
       setToDestination(trip.toDestination);
-      setTripDate(new Date(trip.tripDate));
+      // Use the normalizeDate helper to avoid timezone issues
+      setTripDate(trip.tripDate ? normalizeDate(trip.tripDate) : new Date());
       setConfirmed(trip.confirmed || false);
     }
     
@@ -60,16 +86,10 @@ export default function EditTripModal({
     };
   }, [trip, passengers]);
 
-  const filteredPassengers = passengers.filter(passenger =>
-    `${passenger.firstName} ${passenger.lastName}`
-      .toLowerCase()
-      .includes(passengerSearch.toLowerCase())
-  );
-
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isUpdating || !trip) return;
+    if (isUpdating || !trip || !tripDate) return;
     setIsUpdating(true);
     setError(null);
     
@@ -84,12 +104,15 @@ export default function EditTripModal({
       return;
     }
 
+    // Format the date as YYYY-MM-DD without timezone conversion
+    const formattedDate = format(tripDate, 'yyyy-MM-dd');
+
     const updatedTrip = {
       ...trip,
       passengerId: selectedPassenger._id,
       fromOrigin,
       toDestination,
-      tripDate: format(tripDate, 'yyyy-MM-dd'),
+      tripDate: formattedDate,
       confirmed
     };
 
@@ -134,10 +157,7 @@ export default function EditTripModal({
         throw new Error(errorData.error || 'Failed to delete trip');
       }
 
-      // First notify parent about deletion
       onDelete(trip._id);
-      
-      // Then close the modal
       onClose();
     } catch (error) {
       console.error('Error deleting trip:', error);
@@ -150,135 +170,116 @@ export default function EditTripModal({
   if (!isOpen || !trip) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <div className="modal-header">
-          <div>Edit Trip</div>
-          <button onClick={onClose} className="close-button">×</button>
-        </div>
-
-        <form onSubmit={handleUpdate}>
-          <div className="form-group">
-            <label className="label">Passenger</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="text"
-                value={passengerSearch}
-                onChange={(e) => {
-                  setPassengerSearch(e.target.value);
-                  setShowPassengerList(true);
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Trip</DialogTitle>
+        <DialogContent>
+          <form onSubmit={handleUpdate}>
+            <FormControl fullWidth margin="normal">
+              <Autocomplete
+                options={passengers}
+                getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
+                value={selectedPassenger}
+                onChange={(_, newValue) => {
+                  setSelectedPassenger(newValue);
+                  setPassengerSearch(newValue ? `${newValue.firstName} ${newValue.lastName}` : '');
                 }}
-                onFocus={() => setShowPassengerList(true)}
-                onBlur={() => setTimeout(() => setShowPassengerList(false), 200)}
-                placeholder="Search passenger..."
-                className="input"
-              />
-              {showPassengerList && (
-                <div className="passenger-list">
-                  {filteredPassengers.map(passenger => (
-                    <div
-                      key={passenger._id}
-                      onClick={() => {
-                        setSelectedPassenger(passenger);
-                        setPassengerSearch(`${passenger.firstName} ${passenger.lastName}`);
-                        setShowPassengerList(false);
-                      }}
-                      className={`passenger-item ${selectedPassenger?._id === passenger._id ? 'passenger-item-highlighted' : ''}`}
-                    >
-                      {passenger.firstName} {passenger.lastName}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="date-confirm-container">
-            <div className="date-input">
-              <label className="label">Trip Date</label>
-              <input
-                type="date"
-                value={format(tripDate, 'yyyy-MM-dd')}
-                onChange={(e) => {
-                  const selected = new Date(e.target.value);
-                  selected.setHours(tripDate.getHours());
-                  selected.setMinutes(tripDate.getMinutes());
-                  setTripDate(selected);
+                inputValue={passengerSearch}
+                onInputChange={(_, newInputValue) => {
+                  setPassengerSearch(newInputValue);
                 }}
-                className="input"
+                renderInput={(params) => (
+                  <TextField {...params} label="Passenger" required />
+                )}
               />
-            </div>
-            <div className="confirm-checkbox">
-              <label className="label">
-                <input
-                  type="checkbox"
-                  checked={confirmed}
-                  onChange={(e) => setConfirmed(e.target.checked)}
-                  className="checkbox-input"
+            </FormControl>
+
+            <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+              <FormControl fullWidth margin="normal">
+                <DatePicker
+                  label="Trip Date"
+                  value={tripDate}
+                  onChange={(newValue) => setTripDate(newValue)}
+                  slotProps={{
+                    textField: {
+                      required: true
+                    }
+                  }}
                 />
-                Confirmed
-              </label>
+              </FormControl>
+              
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={confirmed}
+                    onChange={(e) => setConfirmed(e.target.checked)}
+                  />
+                }
+                label="Confirmed"
+                style={{ marginTop: '16px' }}
+              />
             </div>
-          </div>
 
-          <div className="flex-container">
-            <div className="flex-item">
-              <label className="label">From</label>
-              <select
-                value={fromOrigin}
-                onChange={(e) => setFromOrigin(e.target.value)}
-                className="select"
+            <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+              <FormControl fullWidth margin="normal">
+                <InputLabel>From</InputLabel>
+                <Select
+                  value={fromOrigin}
+                  onChange={(e) => setFromOrigin(e.target.value)}
+                  label="From"
+                >
+                  {locations.map(loc => (
+                    <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth margin="normal">
+                <InputLabel>To</InputLabel>
+                <Select
+                  value={toDestination}
+                  onChange={(e) => setToDestination(e.target.value)}
+                  label="To"
+                >
+                  {locations.map(loc => (
+                    <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </div>
+
+            {fromOrigin === toDestination && (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                Origin and destination cannot be the same
+              </Alert>
+            )}
+
+            {error && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            <DialogActions sx={{ mt: 2 }}>
+              <Button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                color="error"
+                variant="outlined"
               >
-                {locations.map(loc => (
-                  <option key={loc} value={loc}>{loc}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-item">
-              <label className="label">To</label>
-              <select
-                value={toDestination}
-                onChange={(e) => setToDestination(e.target.value)}
-                className="select"
+                {isDeleting ? <CircularProgress size={24} /> : 'Delete Trip'}
+              </Button>
+              <Button
+                type="submit"
+                disabled={!selectedPassenger || fromOrigin === toDestination || isUpdating || !tripDate}
+                variant="contained"
               >
-                {locations.map(loc => (
-                  <option key={loc} value={loc}>{loc}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {fromOrigin === toDestination && (
-            <div className="warning-message">
-              Warning: Origin and destination cannot be the same
-            </div>
-          )}
-
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
-
-          <div className="edit-modal-buttons">
-            <button
-              type="submit"
-              disabled={!selectedPassenger || fromOrigin === toDestination || isUpdating}
-              className="submit-button"
-            >
-              {isUpdating ? 'Updating...' : 'Update Trip'}
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="delete-button"
-            >
-              {isDeleting ? 'Deleting...' : 'Delete Trip'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+                {isUpdating ? <CircularProgress size={24} /> : 'Update Trip'}
+              </Button>
+            </DialogActions>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </LocalizationProvider>
   );
 }
