@@ -30,7 +30,7 @@ import {
   Alert
 } from '@mui/material';
 import {
-  Settings,
+  Dashboard as DashboardIcon,
   Edit,
   Delete,
   Add,
@@ -77,6 +77,7 @@ interface UserForm {
 
 const AdminPage = () => {
   const { user, logout } = useAuth();
+  const token = user?.token;
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const [passengers, setPassengers] = useState<Passenger[]>([]);
@@ -101,19 +102,24 @@ const AdminPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        };
+
         if (activeTab === 0) {
           setLoading(prev => ({ ...prev, passengers: true }));
-          const response = await fetch('https://wells-api.vercel.app/api/passengers');
+          const response = await fetch('https://wells-api.vercel.app/api/passengers', { headers });
           const data = await response.json();
           setPassengers(data);
         } else if (activeTab === 1) {
           setLoading(prev => ({ ...prev, users: true }));
-          const response = await fetch('https://wells-api.vercel.app/api/users');
+          const response = await fetch('https://wells-api.vercel.app/api/users', { headers });
           const data = await response.json();
           setUsers(data);
         } else if (activeTab === 2) {
           setLoading(prev => ({ ...prev, unverified: true }));
-          const response = await fetch('https://wells-api.vercel.app/api/users/unverified');
+          const response = await fetch('https://wells-api.vercel.app/api/users/unverified', { headers });
           const data = await response.json();
           setUnverifiedUsers(data);
         }
@@ -134,7 +140,7 @@ const AdminPage = () => {
     };
 
     fetchData();
-  }, [activeTab]);
+  }, [activeTab, token]);
 
   const handleOpenDialog = (item: Passenger | User | null = null) => {
     setCurrentItem(item);
@@ -157,21 +163,21 @@ const AdminPage = () => {
       let response;
       const url = activeTab === 0 ? 'https://wells-api.vercel.app/api/passengers' : 'https://wells-api.vercel.app/api/users';
       const id = currentItem?._id;
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
 
       if (isEditing && id) {
         response = await fetch(`${url}/${id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify(currentItem),
         });
       } else {
         response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify(currentItem),
         });
       }
@@ -185,13 +191,18 @@ const AdminPage = () => {
       });
 
       // Refresh data
+      const headersForRefresh = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
       if (activeTab === 0) {
-        const passengersResponse = await fetch('https://wells-api.vercel.app/api/passengers');
+        const passengersResponse = await fetch('https://wells-api.vercel.app/api/passengers', { headers: headersForRefresh });
         setPassengers(await passengersResponse.json());
       } else {
-        const usersResponse = await fetch('https://wells-api.vercel.app/api/users');
+        const usersResponse = await fetch('https://wells-api.vercel.app/api/users', { headers: headersForRefresh });
         setUsers(await usersResponse.json());
-        const unverifiedResponse = await fetch('https://wells-api.vercel.app/api/users/unverified');
+        const unverifiedResponse = await fetch('https://wells-api.vercel.app/api/users/unverified', { headers: headersForRefresh });
         setUnverifiedUsers(await unverifiedResponse.json());
       }
 
@@ -210,6 +221,10 @@ const AdminPage = () => {
       const url = activeTab === 0 ? `https://wells-api.vercel.app/api/passengers/${id}` : `https://wells-api.vercel.app/api/users/${id}`;
       const response = await fetch(url, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (!response.ok) throw new Error('Delete failed');
@@ -240,6 +255,10 @@ const AdminPage = () => {
     try {
       const response = await fetch(`https://wells-api.vercel.app/api/users/verify/${userId}`, {
         method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (!response.ok) throw new Error('Verification failed');
@@ -251,7 +270,12 @@ const AdminPage = () => {
       });
 
       // Refresh unverified users list
-      const unverifiedResponse = await fetch('https://wells-api.vercel.app/api/users/unverified');
+      const unverifiedResponse = await fetch('https://wells-api.vercel.app/api/users/unverified', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       setUnverifiedUsers(await unverifiedResponse.json());
     } catch (err) {
       setSnackbar({
@@ -263,31 +287,46 @@ const AdminPage = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: '#121212', minHeight: '100vh', color: 'white' }}>
+    <Box sx={{ minHeight: '100vh' }}>
+      {/* Dark mode header */}
       <AppBar position="static" sx={{ backgroundColor: '#1E1E1E', color: 'white' }}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Admin Dashboard
           </Typography>
-          <Typography variant="subtitle1">
-            Welcome, {user?.firstName}!
-          </Typography>
-          <IconButton color="inherit" onClick={() => navigate('/')} sx={{ ml: 2 }}>
-            <Settings />
+                    <IconButton 
+            color="inherit" 
+            onClick={() => navigate('/heli')} 
+            sx={{ ml: 2 }}
+          >
+            <DashboardIcon />
           </IconButton>
-          <Button color="inherit" onClick={logout} sx={{ ml: 2 }}>
+          <Typography variant="subtitle1">
+            {user?.userEmail}
+          </Typography>
+
+          <Button variant="text" onClick={logout}   color="inherit"  size="small"
+        sx={{ 
+          textTransform: 'none',
+          ml: 1,
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)'
+          }
+        }}
+      >
             Logout
           </Button>
         </Toolbar>
       </AppBar>
 
+      {/* Light mode content */}
       <Container maxWidth="xl" sx={{ mt: 4 }}>
-        <Paper sx={{ backgroundColor: '#1E1E1E', color: 'white', p: 2 }}>
+        <Paper sx={{ p: 2 }}>
           <Tabs
             value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
             indicatorColor="secondary"
-            textColor="inherit"
+            textColor="primary"
             variant="fullWidth"
           >
             <Tab label="Passengers" icon={<Person />} />

@@ -375,7 +375,7 @@ return (
     <Box sx={{ 
       display: 'flex', 
       alignItems: 'center', 
-      gap: 2,
+      gap: 1,
       '& .MuiButton-root': {
         color: 'white'
       }
