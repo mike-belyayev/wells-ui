@@ -39,7 +39,7 @@ interface EditTripModalProps {
   onDelete: (tripId: string) => void;
 }
 
-const locations = ['NTM', 'Ogle', 'NSC', 'NDT', 'NBD', 'STC'];
+const locations = ['Ogle', 'NTM', 'NSC', 'NDT', 'NBD', 'STC'];
 
 export default function EditTripModal({
   isOpen,

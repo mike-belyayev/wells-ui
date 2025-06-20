@@ -1,6 +1,18 @@
 import { useState } from 'react';
-import { Box, TextField, Button, Typography, Paper, Alert, Link } from '@mui/material';
+import { 
+  Box, 
+  TextField, 
+  Button, 
+  Typography, 
+  Paper, 
+  Alert, 
+  Link,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  Select } from '@mui/material';
 import { useAuth } from '../auth/AuthContext';
+import type { SelectChangeEvent } from '@mui/material/Select';
 
 const HomePage = () => {
   const [email, setEmail] = useState('');
@@ -10,6 +22,8 @@ const HomePage = () => {
   const [homeLocation, setHomeLocation] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const { login, register, error, isLoading } = useAuth();
+
+  const locations = ['Ogle', 'NTM', 'NSC', 'NDT', 'NBD', 'STC'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +39,10 @@ const HomePage = () => {
         homeLocation
       });
     }
+  };
+
+  const handleLocationChange = (event: SelectChangeEvent) => {
+    setHomeLocation(event.target.value);
   };
 
   return (
@@ -101,14 +119,22 @@ const HomePage = () => {
                 required
               />
               
-              <TextField
-                label="Home Location"
-                fullWidth
-                margin="normal"
-                value={homeLocation}
-                onChange={(e) => setHomeLocation(e.target.value)}
-                required
-              />
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel id="home-location-label">Home Location</InputLabel>
+                <Select
+                  labelId="home-location-label"
+                  id="home-location"
+                  value={homeLocation}
+                  label="Home Location"
+                  onChange={handleLocationChange}
+                >
+                  {locations.map((location) => (
+                    <MenuItem key={location} value={location}>
+                      {location}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </>
           )}
           

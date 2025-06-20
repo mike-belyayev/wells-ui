@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -69,6 +68,8 @@ interface PassengerForm {
 interface UserForm {
   _id: string;
   userEmail: string;
+  password: string;
+  confirmPassword: string;
   firstName: string;
   lastName: string;
   homeLocation: string;
@@ -100,7 +101,6 @@ const AdminPage = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch data based on active tab
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -145,7 +145,34 @@ const AdminPage = () => {
   }, [activeTab, token]);
 
   const handleOpenDialog = (item: Passenger | User | null = null) => {
-    setCurrentItem(item);
+    if (item && activeTab === 1) {
+      setCurrentItem({
+        ...item,
+        password: '',
+        confirmPassword: ''
+      } as UserForm);
+    } else if (!item && activeTab === 1) {
+      setCurrentItem({
+        _id: '',
+        userEmail: '',
+        password: '',
+        confirmPassword: '',
+        firstName: '',
+        lastName: '',
+        homeLocation: '',
+        isAdmin: false,
+        isVerified: true
+      });
+    } else if (item && activeTab === 0) {
+      setCurrentItem(item as PassengerForm);
+    } else {
+      setCurrentItem({
+        _id: '',
+        firstName: '',
+        lastName: '',
+        jobRole: ''
+      });
+    }
     setIsEditing(!!item);
     setOpenDialog(true);
   };
@@ -162,6 +189,16 @@ const AdminPage = () => {
 
   const handleSave = async () => {
     try {
+      if (activeTab === 1 && !isEditing) {
+        const userForm = currentItem as UserForm;
+        if (!userForm.password || userForm.password.length < 6) {
+          throw new Error('Password must be at least 6 characters');
+        }
+        if (userForm.password !== userForm.confirmPassword) {
+          throw new Error("Passwords don't match");
+        }
+      }
+
       let response;
       const url = activeTab === 0 ? 'https://wells-api.vercel.app/api/passengers' : 'https://wells-api.vercel.app/api/users';
       const id = currentItem?._id;
@@ -170,21 +207,40 @@ const AdminPage = () => {
         'Authorization': `Bearer ${token}`
       };
 
+      let dataToSend;
+      if (activeTab === 0) {
+        dataToSend = currentItem;
+      } else {
+        const userForm = currentItem as UserForm;
+        dataToSend = {
+          userEmail: userForm.userEmail,
+          ...(isEditing ? {} : { password: userForm.password }),
+          firstName: userForm.firstName,
+          lastName: userForm.lastName,
+          homeLocation: userForm.homeLocation,
+          isAdmin: userForm.isAdmin,
+          isVerified: userForm.isVerified
+        };
+      }
+
       if (isEditing && id) {
         response = await fetch(`${url}/${id}`, {
           method: 'PUT',
           headers,
-          body: JSON.stringify(currentItem),
+          body: JSON.stringify(dataToSend),
         });
       } else {
         response = await fetch(url, {
           method: 'POST',
           headers,
-          body: JSON.stringify(currentItem),
+          body: JSON.stringify(dataToSend),
         });
       }
 
-      if (!response.ok) throw new Error('Operation failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Operation failed');
+      }
 
       setSnackbar({
         open: true,
@@ -192,7 +248,6 @@ const AdminPage = () => {
         severity: 'success'
       });
 
-      // Refresh data
       const headersForRefresh = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -237,7 +292,6 @@ const AdminPage = () => {
         severity: 'success'
       });
 
-      // Refresh data
       if (activeTab === 0) {
         setPassengers(passengers.filter(p => p._id !== id));
       } else {
@@ -271,7 +325,6 @@ const AdminPage = () => {
         severity: 'success'
       });
 
-      // Refresh unverified users list
       const unverifiedResponse = await fetch('https://wells-api.vercel.app/api/users/unverified', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -303,24 +356,23 @@ const AdminPage = () => {
 
   const filterUsers = (user: User) => {
     if (!searchTerm) return true;
-      const term = searchTerm.toLowerCase();
-      const email = user.userEmail?.toLowerCase() || '';
-      const firstName = user.firstName?.toLowerCase() || '';
-      const lastName = user.lastName?.toLowerCase() || '';
-      const homeLocation = user.homeLocation?.toLowerCase() || '';
-      const adminStatus = user.isAdmin ? 'admin' : '';
+    const term = searchTerm.toLowerCase();
+    const email = user.userEmail?.toLowerCase() || '';
+    const firstName = user.firstName?.toLowerCase() || '';
+    const lastName = user.lastName?.toLowerCase() || '';
+    const homeLocation = user.homeLocation?.toLowerCase() || '';
+    const adminStatus = user.isAdmin ? 'admin' : '';
     return (
-        email.includes(term) ||
-        firstName.includes(term) ||
-        lastName.includes(term) ||
-        homeLocation.includes(term) ||
-        adminStatus.includes(term)
+      email.includes(term) ||
+      firstName.includes(term) ||
+      lastName.includes(term) ||
+      homeLocation.includes(term) ||
+      adminStatus.includes(term)
     );
   };
 
   return (
     <Box sx={{ minHeight: '100vh' }}>
-      {/* Dark mode header */}
       <AppBar position="static" sx={{ backgroundColor: '#1E1E1E', color: 'white' }}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -336,7 +388,6 @@ const AdminPage = () => {
           <Typography variant="subtitle1">
             {user?.userEmail}
           </Typography>
-
           <Button variant="text" onClick={logout} color="inherit" size="small"
             sx={{ 
               textTransform: 'none',
@@ -351,7 +402,6 @@ const AdminPage = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Light mode content */}
       <Container maxWidth="xl" sx={{ mt: 4 }}>
         <Paper sx={{ p: 2 }}>
           <Tabs
@@ -390,12 +440,7 @@ const AdminPage = () => {
                       <Button
                         variant="contained"
                         startIcon={<Add />}
-                        onClick={() => handleOpenDialog({
-                          _id: '',
-                          firstName: '',
-                          lastName: '',
-                          jobRole: ''
-                        })}
+                        onClick={() => handleOpenDialog()}
                       >
                         Add Passenger
                       </Button>
@@ -455,15 +500,7 @@ const AdminPage = () => {
                       <Button
                         variant="contained"
                         startIcon={<Add />}
-                        onClick={() => handleOpenDialog({
-                          _id: '',
-                          userEmail: '',
-                          firstName: '',
-                          lastName: '',
-                          homeLocation: '',
-                          isAdmin: false,
-                          isVerified: true
-                        })}
+                        onClick={() => handleOpenDialog()}
                       >
                         Add User
                       </Button>
@@ -568,8 +605,7 @@ const AdminPage = () => {
         </Paper>
       </Container>
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
           {isEditing ? 'Edit' : 'Add New'} {activeTab === 0 ? 'Passenger' : 'User'}
         </DialogTitle>
@@ -583,6 +619,7 @@ const AdminPage = () => {
                   value={(currentItem as PassengerForm)?.firstName || ''}
                   onChange={handleInputChange}
                   fullWidth
+                  required
                 />
                 <TextField
                   name="lastName"
@@ -590,6 +627,7 @@ const AdminPage = () => {
                   value={(currentItem as PassengerForm)?.lastName || ''}
                   onChange={handleInputChange}
                   fullWidth
+                  required
                 />
                 <TextField
                   name="jobRole"
@@ -597,6 +635,7 @@ const AdminPage = () => {
                   value={(currentItem as PassengerForm)?.jobRole || ''}
                   onChange={handleInputChange}
                   fullWidth
+                  required
                 />
               </>
             ) : (
@@ -608,13 +647,46 @@ const AdminPage = () => {
                   onChange={handleInputChange}
                   fullWidth
                   type="email"
+                  required
                 />
+                {!isEditing && (
+                  <>
+                    <TextField
+                      name="password"
+                      label="Password"
+                      type="password"
+                      value={(currentItem as UserForm)?.password || ''}
+                      onChange={handleInputChange}
+                      fullWidth
+                      required
+                    />
+                    <TextField
+                      name="confirmPassword"
+                      label="Confirm Password"
+                      type="password"
+                      value={(currentItem as UserForm)?.confirmPassword || ''}
+                      onChange={handleInputChange}
+                      fullWidth
+                      required
+                      error={
+                        (currentItem as UserForm)?.password !== 
+                        (currentItem as UserForm)?.confirmPassword
+                      }
+                      helperText={
+                        (currentItem as UserForm)?.password !== 
+                        (currentItem as UserForm)?.confirmPassword ? 
+                        "Passwords don't match" : ""
+                      }
+                    />
+                  </>
+                )}
                 <TextField
                   name="firstName"
                   label="First Name"
                   value={(currentItem as UserForm)?.firstName || ''}
                   onChange={handleInputChange}
                   fullWidth
+                  required
                 />
                 <TextField
                   name="lastName"
@@ -622,6 +694,7 @@ const AdminPage = () => {
                   value={(currentItem as UserForm)?.lastName || ''}
                   onChange={handleInputChange}
                   fullWidth
+                  required
                 />
                 <TextField
                   name="homeLocation"
@@ -629,6 +702,7 @@ const AdminPage = () => {
                   value={(currentItem as UserForm)?.homeLocation || ''}
                   onChange={handleInputChange}
                   fullWidth
+                  required
                 />
                 <TextField
                   name="isAdmin"
@@ -660,7 +734,6 @@ const AdminPage = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
