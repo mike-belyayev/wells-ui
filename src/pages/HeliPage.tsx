@@ -36,7 +36,7 @@ interface DayData {
 const HeliPage = () => {
   const { logout, user } = useAuth();
   const isAdmin = user?.isAdmin || false;
-  const [currentLocation, setCurrentLocation] = useState('NTM');
+  const [currentLocation, setCurrentLocation] = useState('NSC');
   const [passengers, setPassengers] = useState<Passenger[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [weeksData, setWeeksData] = useState<DayData[][]>([]);
@@ -93,8 +93,39 @@ const HeliPage = () => {
     }
   }, []);
 
+  // Auto-refresh implementation
   useEffect(() => {
-    fetchData();
+    let refreshInterval: NodeJS.Timeout;
+    let isMounted = true;
+    
+    const startPolling = async () => {
+      try {
+        await fetchData();
+        
+        // Only set interval if component is still mounted
+        if (isMounted) {
+          refreshInterval = setInterval(async () => {
+            try {
+              await fetchData();
+            } catch (error) {
+              console.error('Error during auto-refresh:', error);
+              // Don't stop polling on errors - try again next interval
+            }
+          }, 600000); // 10 minutes
+        }
+      } catch (error) {
+        console.error('Initial data fetch failed:', error);
+      }
+    };
+    
+    startPolling();
+    
+    return () => {
+      isMounted = false;
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    };
   }, [fetchData]);
 
   const generateWeeks = useCallback(() => {
@@ -279,147 +310,144 @@ const HeliPage = () => {
     return <div className="error-container">Error: {error}</div>;
   }
 
-return (
-  <div className="dashboard-container">
-<AppBar 
-  position="static" 
-  sx={{ 
-    backgroundColor: '#121212', // Dark background
-    color: 'white', // Light text
-    backgroundImage: 'none', // Remove default gradient
-    boxShadow: 'none',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.12)' // Subtle divider
-  }}
->
-  <Toolbar sx={{ 
-    justifyContent: 'space-between', 
-    gap: 2,
-    minHeight: '64px' // Ensure consistent height
-  }}>
-    {/* Left section - Title and Calendar */}
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      <Typography variant="h6" component="h1" sx={{ fontWeight: 'bold' }}>
-        Helicopter Passengers
-      </Typography>
-      
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: 1,
-        '& .MuiButton-root': {
-          color: 'white',
-          borderColor: 'rgba(255, 255, 255, 0.23)',
-          '&:hover': {
-            borderColor: 'white'
-          }
-        },
-        '& .MuiIconButton-root': {
-          color: 'white'
-        }
-      }}>
-        <IconButton onClick={handlePrevWeek} size="small">
-          <ChevronLeft />
-        </IconButton>
-        
-        <Button 
-          variant="outlined" 
-          size="small" 
-          onClick={handleToday}
-          sx={{ textTransform: 'none' }}
-        >
-          Today
-        </Button>
-        
-        <Typography variant="body2" sx={{ 
-          minWidth: 150, 
-          textAlign: 'center',
-          color: 'rgba(255, 255, 255, 0.7)' // Slightly muted
-        }}>
-          {getWeekRangeDisplay()}
-        </Typography>
-        
-        <IconButton onClick={handleNextWeek} size="small">
-          <ChevronRight />
-        </IconButton>
-      </Box>
-    </Box>
-
-    {/* Middle section - Location dropdown */}
-    <Box sx={{ 
-      flex: 1, 
-      maxWidth: 200,
-      '& .MuiInputLabel-root': {
-        color: 'rgba(255, 255, 255, 0.7)'
-      },
-      '& .MuiOutlinedInput-root': {
-        color: 'white',
-        '& fieldset': {
-          borderColor: 'rgba(255, 255, 255, 0.23)'
-        },
-        '&:hover fieldset': {
-          borderColor: 'white'
-        }
-      },
-      '& .MuiSelect-icon': {
-        color: 'white'
-      }
-    }}>
-      <LocationDropdown 
-        currentLocation={currentLocation} 
-        onLocationChange={setCurrentLocation}
-        size="small"
-      />
-    </Box>
-
-    {/* Right section - User controls */}
-    <Box sx={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      gap: 1,
-      '& .MuiButton-root': {
-        color: 'white'
-      }
-    }}>
-      {isAdmin && (
-        <IconButton 
-          onClick={() => navigate('/admin')}
-          title="Admin Settings"
-          sx={{ 
-            color: 'white',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.08)'
-            }
-          }}
-        >
-          <Settings />
-        </IconButton>
-      )}
-      
-      <Typography variant="body2" noWrap sx={{ 
-        maxWidth: 300,
-        color: 'white'
-      }}>
-        {user?.userEmail}
-        {isAdmin && " (admin)"}
-      </Typography>
-      
-      <Button 
-        variant="text" 
-        onClick={logout}
-        size="small"
+  return (
+    <div className="dashboard-container">
+      <AppBar 
+        position="static" 
         sx={{ 
-          textTransform: 'none',
-          ml: 1,
-          '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.08)'
-          }
+          backgroundColor: '#121212',
+          color: 'white',
+          backgroundImage: 'none',
+          boxShadow: 'none',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.12)'
         }}
       >
-        Logout
-      </Button>
-    </Box>
-  </Toolbar>
-</AppBar>
+        <Toolbar sx={{ 
+          justifyContent: 'space-between', 
+          gap: 2,
+          minHeight: '64px'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h6" component="h1" sx={{ fontWeight: 'bold' }}>
+              Helicopter Passengers
+            </Typography>
+            
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              '& .MuiButton-root': {
+                color: 'white',
+                borderColor: 'rgba(255, 255, 255, 0.23)',
+                '&:hover': {
+                  borderColor: 'white'
+                }
+              },
+              '& .MuiIconButton-root': {
+                color: 'white'
+              }
+            }}>
+              <IconButton onClick={handlePrevWeek} size="small">
+                <ChevronLeft />
+              </IconButton>
+              
+              <Button 
+                variant="outlined" 
+                size="small" 
+                onClick={handleToday}
+                sx={{ textTransform: 'none' }}
+              >
+                Today
+              </Button>
+              
+              <Typography variant="body2" sx={{ 
+                minWidth: 150, 
+                textAlign: 'center',
+                color: 'rgba(255, 255, 255, 0.7)'
+              }}>
+                {getWeekRangeDisplay()}
+              </Typography>
+              
+              <IconButton onClick={handleNextWeek} size="small">
+                <ChevronRight />
+              </IconButton>
+            </Box>
+          </Box>
+
+          <Box sx={{ 
+            flex: 1, 
+            maxWidth: 200,
+            '& .MuiInputLabel-root': {
+              color: 'rgba(255, 255, 255, 0.7)'
+            },
+            '& .MuiOutlinedInput-root': {
+              color: 'white',
+              '& fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.23)'
+              },
+              '&:hover fieldset': {
+                borderColor: 'white'
+              }
+            },
+            '& .MuiSelect-icon': {
+              color: 'white'
+            }
+          }}>
+            <LocationDropdown 
+              currentLocation={currentLocation} 
+              onLocationChange={setCurrentLocation}
+              size="small"
+            />
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            '& .MuiButton-root': {
+              color: 'white'
+            }
+          }}>
+            {isAdmin && (
+              <IconButton 
+                onClick={() => navigate('/admin')}
+                title="Admin Settings"
+                sx={{ 
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)'
+                  }
+                }}
+              >
+                <Settings />
+              </IconButton>
+            )}
+            
+            <Typography variant="body2" noWrap sx={{ 
+              maxWidth: 300,
+              color: 'white'
+            }}>
+              {user?.userEmail}
+              {isAdmin && " (admin)"}
+            </Typography>
+            
+            <Button 
+              variant="text" 
+              onClick={logout}
+              size="small"
+              sx={{ 
+                textTransform: 'none',
+                ml: 1,
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)'
+                }
+              }}
+            >
+              Logout
+            </Button>
+          </Box>
+        </Toolbar>
+      </AppBar>
       
       <div className="days-header">
         <div className="corner-cell"></div>
