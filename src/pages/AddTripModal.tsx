@@ -34,6 +34,7 @@ interface AddTripModalProps {
     toDestination: string;
     tripDate: string;
     confirmed: boolean;
+    numberOfPassengers?: number; // Add this line
   }) => void;
 }
 
@@ -59,25 +60,40 @@ export default function AddTripModal({
   const [toDestination, setToDestination] = useState(tripType === 'incoming' ? currentLocation : 'NSC');
   const [tripDate, setTripDate] = useState<Date | null>(normalizeDate(selectedDate));
   const [confirmed, setConfirmed] = useState(false);
+  const [numberOfPassengers, setNumberOfPassengers] = useState<number | ''>(''); // Add this state
 
   useEffect(() => {
     setTripDate(normalizeDate(selectedDate));
     setFromOrigin(tripType === 'outgoing' ? currentLocation : 'NTM');
     setToDestination(tripType === 'incoming' ? currentLocation : 'NSC');
     setConfirmed(false);
+    setNumberOfPassengers(''); // Reset when modal opens
   }, [selectedDate, tripType, currentLocation]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPassenger || !tripDate || fromOrigin === toDestination) return;
 
-    onSubmit({
+    const tripData = {
       passengerId: selectedPassenger._id,
       fromOrigin,
       toDestination,
       tripDate: format(tripDate, 'yyyy-MM-dd'),
-      confirmed
-    });
+      confirmed,
+      // Only include numberOfPassengers if it's a valid number
+      ...(numberOfPassengers !== '' && { numberOfPassengers: Number(numberOfPassengers) })
+    };
+
+    onSubmit(tripData);
+  };
+
+  // Handle number input changes
+  const handlePassengerCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow empty string or positive integers
+    if (value === '' || (/^\d+$/.test(value) && parseInt(value) > 0)) {
+      setNumberOfPassengers(value === '' ? '' : parseInt(value));
+    }
   };
 
   if (!isOpen) return null;
@@ -160,6 +176,22 @@ export default function AddTripModal({
                 </Select>
               </FormControl>
             </div>
+
+            {/* Add Number of Passengers Field */}
+            <FormControl fullWidth margin="normal">
+              <TextField
+                label="Number of Passengers (Optional)"
+                type="number"
+                value={numberOfPassengers}
+                onChange={handlePassengerCountChange}
+                inputProps={{ 
+                  min: 1,
+                  step: 1
+                }}
+                helperText="Leave empty if not applicable"
+                placeholder="Enter number of passengers"
+              />
+            </FormControl>
 
             {fromOrigin === toDestination && (
               <Alert severity="warning" sx={{ mt: 2 }}>

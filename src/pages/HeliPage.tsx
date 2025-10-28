@@ -24,6 +24,7 @@ export interface Trip {
   toDestination: string;
   tripDate: string;
   confirmed: boolean;
+  numberOfPassengers?: number;
 }
 
 interface DayData {
@@ -491,26 +492,27 @@ const HeliPage = () => {
                         onDrop={(e) => isAdmin && handleDrop(e, day.date, 'incoming')}
                       >
                         <div className="passenger-cards-container">
-                          {day.incoming.map((trip, i) => (
-                            <div 
-                              key={i}
-                              onClick={() => isAdmin && setEditingTrip(trip)}
-                              className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
-                              draggable={isAdmin}
-                              onDragStart={() => isAdmin && handleDragStart(trip, 'incoming')}
-                            >
-                              <PassengerCard
-                                firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                                lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                                jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                                fromOrigin={trip.fromOrigin}
-                                toDestination={trip.toDestination}
-                                type='incoming'
-                                confirmed={trip.confirmed}
-                              />
-                            </div>
-                          ))}
-                        </div>
+  {day.incoming.map((trip, i) => (
+    <div 
+      key={i}
+      onClick={() => isAdmin && setEditingTrip(trip)}
+      className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
+      draggable={isAdmin}
+      onDragStart={() => isAdmin && handleDragStart(trip, 'incoming')}
+    >
+      <PassengerCard
+        firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+        lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+        jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+        fromOrigin={trip.fromOrigin}
+        toDestination={trip.toDestination}
+        type='incoming'
+        confirmed={trip.confirmed}
+        numberOfPassengers={trip.numberOfPassengers} // Add this line
+      />
+    </div>
+  ))}
+</div>
                         {isAdmin && (
                           <button
                             onClick={() => {
@@ -534,26 +536,27 @@ const HeliPage = () => {
                         onDrop={(e) => isAdmin && handleDrop(e, day.date, 'outgoing')}
                       >
                         <div className="passenger-cards-container">
-                          {day.outgoing.map((trip, i) => (
-                            <div 
-                              key={i}
-                              onClick={() => isAdmin && setEditingTrip(trip)}
-                              className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
-                              draggable={isAdmin}
-                              onDragStart={() => isAdmin && handleDragStart(trip, 'outgoing')}
-                            >
-                              <PassengerCard
-                                firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                                lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                                jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                                fromOrigin={trip.fromOrigin}
-                                toDestination={trip.toDestination}
-                                type='outgoing'
-                                confirmed={trip.confirmed}
-                              />
-                            </div>
-                          ))}
-                        </div>
+  {day.outgoing.map((trip, i) => (
+    <div 
+      key={i}
+      onClick={() => isAdmin && setEditingTrip(trip)}
+      className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
+      draggable={isAdmin}
+      onDragStart={() => isAdmin && handleDragStart(trip, 'outgoing')}
+    >
+      <PassengerCard
+        firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+        lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+        jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+        fromOrigin={trip.fromOrigin}
+        toDestination={trip.toDestination}
+        type='outgoing'
+        confirmed={trip.confirmed}
+        numberOfPassengers={trip.numberOfPassengers} // Add this line
+      />
+    </div>
+  ))}
+</div>
                         {isAdmin && (
                           <button
                             onClick={() => {

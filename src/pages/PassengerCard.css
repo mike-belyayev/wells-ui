@@ -30,6 +30,18 @@
   margin-bottom: 2px;
 }
 
+.passenger-count {
+  font-size: 0.7rem;
+  opacity: 0.9;
+  font-weight: 600;
+  margin-left: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 1px 4px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .passenger-job {
   font-size: 0.65rem;
   opacity: 0.85;

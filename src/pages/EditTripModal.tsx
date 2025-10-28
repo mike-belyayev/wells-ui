@@ -55,6 +55,7 @@ export default function EditTripModal({
   const [toDestination, setToDestination] = useState('NSC');
   const [tripDate, setTripDate] = useState<Date | null>(new Date());
   const [confirmed, setConfirmed] = useState(false);
+  const [numberOfPassengers, setNumberOfPassengers] = useState<number | ''>(''); // Add this state
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +72,8 @@ export default function EditTripModal({
       // Use the normalizeDate helper to avoid timezone issues
       setTripDate(trip.tripDate ? normalizeDate(trip.tripDate) : new Date());
       setConfirmed(trip.confirmed || false);
+      // Set numberOfPassengers from trip data, handle null/undefined
+      setNumberOfPassengers(trip.numberOfPassengers ?? ''); // Add this line
     }
     
     return () => {
@@ -80,6 +83,7 @@ export default function EditTripModal({
       setToDestination('NSC');
       setTripDate(new Date());
       setConfirmed(false);
+      setNumberOfPassengers(''); // Reset this too
       setError(null);
       setIsUpdating(false);
       setIsDeleting(false);
@@ -113,7 +117,9 @@ export default function EditTripModal({
       fromOrigin,
       toDestination,
       tripDate: formattedDate,
-      confirmed
+      confirmed,
+      // Only include numberOfPassengers if it's a valid number, otherwise set to null
+      numberOfPassengers: numberOfPassengers !== '' ? Number(numberOfPassengers) : null
     };
 
     try {
@@ -164,6 +170,15 @@ export default function EditTripModal({
       setError(error instanceof Error ? error.message : 'Failed to delete trip. Please try again.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Handle number input changes
+  const handlePassengerCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow empty string or positive integers
+    if (value === '' || (/^\d+$/.test(value) && parseInt(value) > 0)) {
+      setNumberOfPassengers(value === '' ? '' : parseInt(value));
     }
   };
 
@@ -247,6 +262,22 @@ export default function EditTripModal({
                 </Select>
               </FormControl>
             </div>
+
+            {/* Add Number of Passengers Field */}
+            <FormControl fullWidth margin="normal">
+              <TextField
+                label="Number of Passengers (Optional)"
+                type="number"
+                value={numberOfPassengers}
+                onChange={handlePassengerCountChange}
+                inputProps={{ 
+                  min: 1,
+                  step: 1
+                }}
+                helperText="Leave empty if not applicable"
+                placeholder="Enter number of passengers"
+              />
+            </FormControl>
 
             {fromOrigin === toDestination && (
               <Alert severity="warning" sx={{ mt: 2 }}>

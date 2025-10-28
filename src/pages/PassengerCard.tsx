@@ -8,6 +8,7 @@ interface PassengerCardProps {
   toDestination: string;
   type: 'incoming' | 'outgoing';
   confirmed: boolean;
+  numberOfPassengers?: number; // Add this optional prop
 }
 
 export default function PassengerCard({ 
@@ -17,15 +18,19 @@ export default function PassengerCard({
   fromOrigin, 
   toDestination,
   type,
-  confirmed
+  confirmed,
+  numberOfPassengers // Add this to destructuring
 }: PassengerCardProps) {
   const fullName = `${firstName} ${lastName}`;
+  
+  // Build tooltip content including number of passengers if defined
   const tooltipContent = `
     Name: ${fullName}
     Role: ${jobRole || 'N/A'}
     Route: ${fromOrigin} → ${toDestination}
     Type: ${type}
     Status: ${confirmed ? 'Confirmed' : 'Pending'}
+    ${numberOfPassengers ? `Passengers: ${numberOfPassengers}` : ''}
   `;
 
   return (
@@ -33,6 +38,10 @@ export default function PassengerCard({
       <div className="passenger-info">
         <div className="passenger-name" data-tooltip={tooltipContent.trim()}>
           {firstName} {lastName}
+          {/* Show number of passengers in brackets if defined and greater than 0 */}
+          {numberOfPassengers && numberOfPassengers > 0 && (
+            <span className="passenger-count"> ({numberOfPassengers})</span>
+          )}
         </div>
       </div>
       <div className="passenger-route">
