@@ -26,7 +26,8 @@ import {
   MenuItem,
   CircularProgress,
   Snackbar,
-  Alert
+  Alert,
+  Chip
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -37,7 +38,8 @@ import {
   Close,
   Person,
   People,
-  Search
+  Search,
+  LocationOn
 } from '@mui/icons-material';
 
 interface Passenger {
@@ -56,6 +58,14 @@ interface User {
   isAdmin: boolean;
   isVerified: boolean;
   lastLogin?: string;
+}
+
+interface Site {
+  _id: string;
+  siteName: string;
+  currentPOB: number;
+  maximumPOB: number;
+  pobUpdatedDate: string;
 }
 
 interface PassengerForm {
@@ -77,6 +87,13 @@ interface UserForm {
   isVerified: boolean;
 }
 
+interface SiteForm {
+  _id: string;
+  siteName: string;
+  currentPOB: number;
+  maximumPOB: number;
+}
+
 const AdminPage = () => {
   const { user, logout } = useAuth();
   const token = user?.token;
@@ -85,14 +102,16 @@ const AdminPage = () => {
   const [passengers, setPassengers] = useState<Passenger[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [unverifiedUsers, setUnverifiedUsers] = useState<User[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState({
     passengers: false,
     users: false,
-    unverified: false
+    unverified: false,
+    sites: false
   });
   const [, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [currentItem, setCurrentItem] = useState<PassengerForm | UserForm | null>(null);
+  const [currentItem, setCurrentItem] = useState<PassengerForm | UserForm | SiteForm | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -124,6 +143,11 @@ const AdminPage = () => {
           const response = await fetch('https://wells-api.vercel.app/api/users/unverified', { headers });
           const data = await response.json();
           setUnverifiedUsers(data);
+        } else if (activeTab === 3) {
+          setLoading(prev => ({ ...prev, sites: true }));
+          const response = await fetch('https://wells-api.vercel.app/api/sites', { headers });
+          const data = await response.json();
+          setSites(data);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
@@ -136,7 +160,8 @@ const AdminPage = () => {
         setLoading({
           passengers: false,
           users: false,
-          unverified: false
+          unverified: false,
+          sites: false
         });
       }
     };
@@ -144,7 +169,7 @@ const AdminPage = () => {
     fetchData();
   }, [activeTab, token]);
 
-  const handleOpenDialog = (item: Passenger | User | null = null) => {
+  const handleOpenDialog = (item: Passenger | User | Site | null = null) => {
     if (item && activeTab === 1) {
       setCurrentItem({
         ...item,
@@ -153,12 +178,21 @@ const AdminPage = () => {
       } as UserForm);
     } else if (item && activeTab === 0) {
       setCurrentItem(item as PassengerForm);
+    } else if (item && activeTab === 3) {
+      setCurrentItem(item as SiteForm);
     } else if (activeTab === 0) {
       setCurrentItem({
         _id: '',
         firstName: '',
         lastName: '',
         jobRole: ''
+      });
+    } else if (activeTab === 3) {
+      setCurrentItem({
+        _id: '',
+        siteName: '',
+        currentPOB: 0,
+        maximumPOB: 200
       });
     }
     setIsEditing(!!item);
@@ -188,17 +222,14 @@ const AdminPage = () => {
       }
 
       let response;
-      const url = activeTab === 0 ? 'https://wells-api.vercel.app/api/passengers' : 'https://wells-api.vercel.app/api/users';
-      const id = currentItem?._id;
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      };
-
+      let url;
       let dataToSend;
+
       if (activeTab === 0) {
+        url = 'https://wells-api.vercel.app/api/passengers';
         dataToSend = currentItem;
-      } else {
+      } else if (activeTab === 1) {
+        url = 'https://wells-api.vercel.app/api/users';
         const userForm = currentItem as UserForm;
         dataToSend = {
           userEmail: userForm.userEmail,
@@ -209,16 +240,36 @@ const AdminPage = () => {
           isAdmin: userForm.isAdmin,
           isVerified: userForm.isVerified
         };
+      } else if (activeTab === 3) {
+        // For sites, we use the POB update endpoint
+        const siteForm = currentItem as SiteForm;
+        url = `https://wells-api.vercel.app/api/sites/${siteForm.siteName}/pob`;
+        dataToSend = {
+          currentPOB: Number(siteForm.currentPOB)
+        };
       }
 
-      if (isEditing && id) {
+      const id = currentItem?._id;
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+
+      if (isEditing && id && activeTab !== 3) {
         response = await fetch(`${url}/${id}`, {
           method: 'PUT',
           headers,
           body: JSON.stringify(dataToSend),
         });
+      } else if (activeTab === 3) {
+        // For sites, always use PUT to the POB endpoint
+        response = await fetch(url!, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(dataToSend),
+        });
       } else {
-        response = await fetch(url, {
+        response = await fetch(url!, {
           method: 'POST',
           headers,
           body: JSON.stringify(dataToSend),
@@ -227,7 +278,7 @@ const AdminPage = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Operation failed');
+        throw new Error(errorData.message || errorData.error || 'Operation failed');
       }
 
       setSnackbar({
@@ -236,6 +287,7 @@ const AdminPage = () => {
         severity: 'success'
       });
 
+      // Refresh the data
       const headersForRefresh = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -244,11 +296,14 @@ const AdminPage = () => {
       if (activeTab === 0) {
         const passengersResponse = await fetch('https://wells-api.vercel.app/api/passengers', { headers: headersForRefresh });
         setPassengers(await passengersResponse.json());
-      } else {
+      } else if (activeTab === 1) {
         const usersResponse = await fetch('https://wells-api.vercel.app/api/users', { headers: headersForRefresh });
         setUsers(await usersResponse.json());
         const unverifiedResponse = await fetch('https://wells-api.vercel.app/api/users/unverified', { headers: headersForRefresh });
         setUnverifiedUsers(await unverifiedResponse.json());
+      } else if (activeTab === 3) {
+        const sitesResponse = await fetch('https://wells-api.vercel.app/api/sites', { headers: headersForRefresh });
+        setSites(await sitesResponse.json());
       }
 
       handleCloseDialog();
@@ -329,6 +384,43 @@ const AdminPage = () => {
     }
   };
 
+  const handleInitializeSites = async () => {
+    try {
+      const response = await fetch('https://wells-api.vercel.app/api/sites/initialize', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) throw new Error('Initialization failed');
+
+      const data = await response.json();
+      
+      setSnackbar({
+        open: true,
+        message: 'Sites initialized successfully',
+        severity: 'success'
+      });
+
+      // Refresh sites data
+      const sitesResponse = await fetch('https://wells-api.vercel.app/api/sites', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      setSites(await sitesResponse.json());
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : 'Initialization failed',
+        severity: 'error'
+      });
+    }
+  };
+
   const filterPassengers = (passenger: Passenger) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
@@ -357,6 +449,25 @@ const AdminPage = () => {
       homeLocation.includes(term) ||
       adminStatus.includes(term)
     );
+  };
+
+  const filterSites = (site: Site) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    const siteName = site.siteName?.toLowerCase() || '';
+    return siteName.includes(term);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  const getPOBStatus = (currentPOB: number, maximumPOB: number) => {
+    const percentage = (currentPOB / maximumPOB) * 100;
+    if (percentage >= 90) return 'error';
+    if (percentage >= 75) return 'warning';
+    return 'success';
   };
 
   return (
@@ -402,10 +513,11 @@ const AdminPage = () => {
             <Tab label="Passengers" icon={<Person />} />
             <Tab label="Users" icon={<People />} />
             <Tab label="Unverified Users" icon={<People />} />
+            <Tab label="Sites" icon={<LocationOn />} />
           </Tabs>
 
           <Box sx={{ mt: 3 }}>
-            {loading.passengers || loading.users || loading.unverified ? (
+            {loading.passengers || loading.users || loading.unverified || loading.sites ? (
               <Box display="flex" justifyContent="center" p={4}>
                 <CircularProgress />
               </Box>
@@ -580,6 +692,95 @@ const AdminPage = () => {
                     </TableContainer>
                   </>
                 )}
+
+                {activeTab === 3 && (
+                  <>
+                    <Box display="flex" justifyContent="space-between" mb={2} alignItems="center">
+                      <TextField
+                        variant="outlined"
+                        size="small"
+                        placeholder="Search sites..."
+                        InputProps={{
+                          startAdornment: <Search color="action" sx={{ mr: 1 }} />
+                        }}
+                        sx={{ width: 300 }}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                      <Box>
+                        <Button
+                          variant="outlined"
+                          onClick={handleInitializeSites}
+                          sx={{ mr: 2 }}
+                        >
+                          Initialize Sites
+                        </Button>
+                        <Button
+                          variant="contained"
+                          startIcon={<Add />}
+                          onClick={() => handleOpenDialog()}
+                        >
+                          Add Site
+                        </Button>
+                      </Box>
+                    </Box>
+                    <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
+                      <Table stickyHeader>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Site Name</TableCell>
+                            <TableCell align="center">Current POB</TableCell>
+                            <TableCell align="center">Maximum POB</TableCell>
+                            <TableCell align="center">Status</TableCell>
+                            <TableCell align="center">Last Updated</TableCell>
+                            <TableCell align="center">Actions</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {sites.filter(filterSites).map((site) => (
+                            <TableRow key={site._id}>
+                              <TableCell>
+                                <Typography variant="subtitle1" fontWeight="bold">
+                                  {site.siteName}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="center">
+                                <Typography variant="h6" color="primary">
+                                  {site.currentPOB}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="center">
+                                <Typography variant="body1">
+                                  {site.maximumPOB}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="center">
+                                <Chip
+                                  label={`${Math.round((site.currentPOB / site.maximumPOB) * 100)}%`}
+                                  color={getPOBStatus(site.currentPOB, site.maximumPOB) as any}
+                                  variant="filled"
+                                />
+                              </TableCell>
+                              <TableCell align="center">
+                                <Typography variant="body2" color="textSecondary">
+                                  {formatDate(site.pobUpdatedDate)}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="center">
+                                <IconButton
+                                  color="primary"
+                                  onClick={() => handleOpenDialog(site)}
+                                >
+                                  <Edit />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </>
+                )}
               </>
             )}
           </Box>
@@ -588,12 +789,12 @@ const AdminPage = () => {
 
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {isEditing ? 'Edit' : 'Add New'} {activeTab === 0 ? 'Passenger' : 'User'}
+          {isEditing ? 'Edit' : 'Add New'} {activeTab === 0 ? 'Passenger' : activeTab === 3 ? 'Site' : 'User'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
             {activeTab === 0 ? (
-              <>
+                            <>
                 <TextField
                   name="firstName"
                   label="First Name"
@@ -619,8 +820,8 @@ const AdminPage = () => {
                   required
                 />
               </>
-            ) : (
-              <>
+            ) : activeTab === 1 ? (
+                            <>
                 <TextField
                   name="userEmail"
                   label="Email"
@@ -704,7 +905,49 @@ const AdminPage = () => {
                   <MenuItem value="true">Yes</MenuItem>
                 </TextField>
               </>
-            )}
+            ) : activeTab === 3 ? (
+              <>
+                <TextField
+                  name="siteName"
+                  label="Site Name"
+                  value={(currentItem as SiteForm)?.siteName || ''}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                  disabled={isEditing}
+                />
+                <TextField
+                  name="currentPOB"
+                  label="Current POB"
+                  type="number"
+                  value={(currentItem as SiteForm)?.currentPOB || 0}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                  inputProps={{ min: 0 }}
+                />
+                <TextField
+                  name="maximumPOB"
+                  label="Maximum POB"
+                  type="number"
+                  value={(currentItem as SiteForm)?.maximumPOB || 200}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                  inputProps={{ min: 1 }}
+                />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    Utilization:
+                  </Typography>
+                  <Chip
+                    label={`${Math.round((((currentItem as SiteForm)?.currentPOB || 0) / ((currentItem as SiteForm)?.maximumPOB || 1)) * 100)}%`}
+                    color={getPOBStatus((currentItem as SiteForm)?.currentPOB || 0, (currentItem as SiteForm)?.maximumPOB || 1) as any}
+                    size="small"
+                  />
+                </Box>
+              </>
+            ) : null}
           </Box>
         </DialogContent>
         <DialogActions>
