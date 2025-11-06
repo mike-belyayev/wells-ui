@@ -10,12 +10,6 @@ import {
   Paper,
   Tab,
   Tabs,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Button,
   IconButton,
   Dialog,
@@ -31,16 +25,14 @@ import {
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
-  Edit,
-  Delete,
-  Add,
-  Check,
-  Close,
   Person,
   People,
-  Search,
   LocationOn
 } from '@mui/icons-material';
+import PassengersTab from '../components/admin/PassengersTab';
+import UsersTab from '../components/admin/UsersTab';
+import UnverifiedUsersTab from '../components/admin/UnverifiedUsersTab';
+import SitesTab from '../components/admin/SitesTab';
 
 interface Passenger {
   _id: string;
@@ -109,7 +101,6 @@ const AdminPage = () => {
     unverified: false,
     sites: false
   });
-  const [, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [currentItem, setCurrentItem] = useState<PassengerForm | UserForm | SiteForm | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -150,7 +141,6 @@ const AdminPage = () => {
           setSites(data);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch data');
         setSnackbar({
           open: true,
           message: 'Failed to fetch data',
@@ -241,7 +231,7 @@ const AdminPage = () => {
           isVerified: userForm.isVerified
         };
       } else if (activeTab === 3) {
-        // For sites, we use the POB update endpoint
+        // For sites, only update currentPOB
         const siteForm = currentItem as SiteForm;
         url = `https://wells-api.vercel.app/api/sites/${siteForm.siteName}/pob`;
         dataToSend = {
@@ -396,15 +386,12 @@ const AdminPage = () => {
 
       if (!response.ok) throw new Error('Initialization failed');
 
-      const data = await response.json();
-      
       setSnackbar({
         open: true,
         message: 'Sites initialized successfully',
         severity: 'success'
       });
 
-      // Refresh sites data
       const sitesResponse = await fetch('https://wells-api.vercel.app/api/sites', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -524,262 +511,45 @@ const AdminPage = () => {
             ) : (
               <>
                 {activeTab === 0 && (
-                  <>
-                    <Box display="flex" justifyContent="space-between" mb={2} alignItems="center">
-                      <TextField
-                        variant="outlined"
-                        size="small"
-                        placeholder="Search passengers..."
-                        InputProps={{
-                          startAdornment: <Search color="action" sx={{ mr: 1 }} />
-                        }}
-                        sx={{ width: 300 }}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                      <Button
-                        variant="contained"
-                        startIcon={<Add />}
-                        onClick={() => handleOpenDialog()}
-                      >
-                        Add Passenger
-                      </Button>
-                    </Box>
-                    <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
-                      <Table stickyHeader>
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>First Name</TableCell>
-                            <TableCell>Last Name</TableCell>
-                            <TableCell>Job Role</TableCell>
-                            <TableCell>Actions</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {passengers.filter(filterPassengers).map((passenger) => (
-                            <TableRow key={passenger._id}>
-                              <TableCell>{passenger.firstName}</TableCell>
-                              <TableCell>{passenger.lastName}</TableCell>
-                              <TableCell>{passenger.jobRole}</TableCell>
-                              <TableCell>
-                                <IconButton
-                                  color="primary"
-                                  onClick={() => handleOpenDialog(passenger)}
-                                >
-                                  <Edit />
-                                </IconButton>
-                                <IconButton
-                                  color="error"
-                                  onClick={() => handleDelete(passenger._id)}
-                                >
-                                  <Delete />
-                                </IconButton>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </>
+                  <PassengersTab
+                    passengers={passengers}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    onOpenDialog={handleOpenDialog}
+                    onDelete={handleDelete}
+                    filterPassengers={filterPassengers}
+                  />
                 )}
-
                 {activeTab === 1 && (
-                  <>
-                    <Box display="flex" justifyContent="flex-start" mb={2}>
-                      <TextField
-                        variant="outlined"
-                        size="small"
-                        placeholder="Search users..."
-                        InputProps={{
-                          startAdornment: <Search color="action" sx={{ mr: 1 }} />
-                        }}
-                        sx={{ width: 300 }}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </Box>
-                    <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
-                      <Table stickyHeader>
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Email</TableCell>
-                            <TableCell>First Name</TableCell>
-                            <TableCell>Last Name</TableCell>
-                            <TableCell>Location</TableCell>
-                            <TableCell>Admin</TableCell>
-                            <TableCell>Actions</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {users.filter(filterUsers).map((user) => (
-                            <TableRow key={user._id}>
-                              <TableCell>{user.userEmail}</TableCell>
-                              <TableCell>{user.firstName}</TableCell>
-                              <TableCell>{user.lastName}</TableCell>
-                              <TableCell>{user.homeLocation}</TableCell>
-                              <TableCell>
-                                {user.isAdmin ? <Check color="success" /> : <Close color="error" />}
-                              </TableCell>
-                              <TableCell>
-                                <IconButton
-                                  color="primary"
-                                  onClick={() => handleOpenDialog(user)}
-                                >
-                                  <Edit />
-                                </IconButton>
-                                <IconButton
-                                  color="error"
-                                  onClick={() => handleDelete(user._id)}
-                                >
-                                  <Delete />
-                                </IconButton>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </>
+                  <UsersTab
+                    users={users}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    onOpenDialog={handleOpenDialog}
+                    onDelete={handleDelete}
+                    filterUsers={filterUsers}
+                  />
                 )}
-
                 {activeTab === 2 && (
-                  <>
-                    <Box display="flex" justifyContent="flex-start" mb={2}>
-                      <TextField
-                        variant="outlined"
-                        size="small"
-                        placeholder="Search unverified users..."
-                        InputProps={{
-                          startAdornment: <Search color="action" sx={{ mr: 1 }} />
-                        }}
-                        sx={{ width: 300 }}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </Box>
-                    <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
-                      <Table stickyHeader>
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Email</TableCell>
-                            <TableCell>First Name</TableCell>
-                            <TableCell>Last Name</TableCell>
-                            <TableCell>Location</TableCell>
-                            <TableCell>Actions</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {unverifiedUsers.filter(filterUsers).map((user) => (
-                            <TableRow key={user._id}>
-                              <TableCell>{user.userEmail}</TableCell>
-                              <TableCell>{user.firstName}</TableCell>
-                              <TableCell>{user.lastName}</TableCell>
-                              <TableCell>{user.homeLocation}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="contained"
-                                  color="success"
-                                  startIcon={<Check />}
-                                  onClick={() => handleVerifyUser(user._id)}
-                                >
-                                  Verify
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </>
+                  <UnverifiedUsersTab
+                    users={unverifiedUsers}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    onVerifyUser={handleVerifyUser}
+                    filterUsers={filterUsers}
+                  />
                 )}
-
                 {activeTab === 3 && (
-                  <>
-                    <Box display="flex" justifyContent="space-between" mb={2} alignItems="center">
-                      <TextField
-                        variant="outlined"
-                        size="small"
-                        placeholder="Search sites..."
-                        InputProps={{
-                          startAdornment: <Search color="action" sx={{ mr: 1 }} />
-                        }}
-                        sx={{ width: 300 }}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                      <Box>
-                        <Button
-                          variant="outlined"
-                          onClick={handleInitializeSites}
-                          sx={{ mr: 2 }}
-                        >
-                          Initialize Sites
-                        </Button>
-                        <Button
-                          variant="contained"
-                          startIcon={<Add />}
-                          onClick={() => handleOpenDialog()}
-                        >
-                          Add Site
-                        </Button>
-                      </Box>
-                    </Box>
-                    <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
-                      <Table stickyHeader>
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Site Name</TableCell>
-                            <TableCell align="center">Current POB</TableCell>
-                            <TableCell align="center">Maximum POB</TableCell>
-                            <TableCell align="center">Status</TableCell>
-                            <TableCell align="center">Last Updated</TableCell>
-                            <TableCell align="center">Actions</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {sites.filter(filterSites).map((site) => (
-                            <TableRow key={site._id}>
-                              <TableCell>
-                                <Typography variant="subtitle1" fontWeight="bold">
-                                  {site.siteName}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="center">
-                                <Typography variant="h6" color="primary">
-                                  {site.currentPOB}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="center">
-                                <Typography variant="body1">
-                                  {site.maximumPOB}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="center">
-                                <Chip
-                                  label={`${Math.round((site.currentPOB / site.maximumPOB) * 100)}%`}
-                                  color={getPOBStatus(site.currentPOB, site.maximumPOB) as any}
-                                  variant="filled"
-                                />
-                              </TableCell>
-                              <TableCell align="center">
-                                <Typography variant="body2" color="textSecondary">
-                                  {formatDate(site.pobUpdatedDate)}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="center">
-                                <IconButton
-                                  color="primary"
-                                  onClick={() => handleOpenDialog(site)}
-                                >
-                                  <Edit />
-                                </IconButton>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </>
+                  <SitesTab
+                    sites={sites}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    onOpenDialog={handleOpenDialog}
+                    onInitializeSites={handleInitializeSites}
+                    filterSites={filterSites}
+                    formatDate={formatDate}
+                    getPOBStatus={getPOBStatus}
+                  />
                 )}
               </>
             )}
@@ -794,7 +564,7 @@ const AdminPage = () => {
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
             {activeTab === 0 ? (
-                            <>
+              <>
                 <TextField
                   name="firstName"
                   label="First Name"
@@ -821,7 +591,7 @@ const AdminPage = () => {
                 />
               </>
             ) : activeTab === 1 ? (
-                            <>
+              <>
                 <TextField
                   name="userEmail"
                   label="Email"
@@ -935,6 +705,8 @@ const AdminPage = () => {
                   fullWidth
                   required
                   inputProps={{ min: 1 }}
+                  disabled={true} // Maximum POB is not editable via API
+                  helperText="Maximum POB cannot be edited"
                 />
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Typography variant="body2" color="textSecondary">
