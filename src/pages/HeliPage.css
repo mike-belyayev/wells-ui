@@ -164,6 +164,13 @@
   font-size: 0.8rem;
   background-color: #f8f9fa;
   height: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.date-header.today {
+  background-color: #1c2225 !important;
+  color: #09ff00 !important;
+  font-weight: 900;
 }
 
 .passenger-lists {
@@ -180,6 +187,7 @@
   padding: 2px;
   position: relative;
   min-height: 5rem;
+  border-left: 1px solid rgba(76, 175, 80, 0.3);
 }
 
 .outgoing-section {
@@ -188,6 +196,7 @@
   padding: 2px;
   position: relative;
   min-height: 5rem;
+  border-left: 1px solid rgba(33, 150, 243, 0.3);
 }
 
 .pob-footer {
@@ -199,6 +208,28 @@
   font-weight: 500;
   height: 1.5rem;
   border-bottom: 1px solid #3b3c4a;
+  transition: all 0.3s ease;
+}
+
+/* Normal POB - Light green background, dark green text */
+.pob-footer.normal {
+  background-color: #e8f5e8 !important;
+  color: #2e7d32 !important;
+  font-weight: 600;
+}
+
+/* Warning POB (≥95%) - Yellow background, dark orange text */
+.pob-footer.warning {
+  background-color: #ffee8b !important;
+  color: #976200 !important;
+  font-weight: 700;
+}
+
+/* Critical POB (>100%) - Bright red background, light red/white text */
+.pob-footer.critical {
+  background-color: #d70000 !important;
+  color: #ffffff !important;
+  font-weight: 700;
 }
 
 .add-button {
@@ -297,4 +328,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Week row hover effect for better visual separation */
+.week-row:hover .day-column {
+  background-color: #fafafa;
 }
