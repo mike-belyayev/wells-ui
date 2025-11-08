@@ -8,8 +8,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 1.5rem;
-  max-height: 1.5rem;
+  height: 2.2rem; /* Increased height to accommodate second line */
+  max-height: 2.2rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -19,6 +19,9 @@
   min-width: 0;
   overflow: hidden;
   padding-right: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .passenger-name {
@@ -27,7 +30,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 2px;
+  margin-bottom: 1px; /* Reduced margin for tighter spacing */
+  line-height: 1.1;
 }
 
 .passenger-count {
@@ -48,6 +52,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-style: italic; /* Cursive style */
+  font-family: 'Brush Script MT', cursive, Arial, sans-serif; /* Fallback fonts */
+  line-height: 1;
+  margin-top: 1px;
 }
 
 .passenger-route {

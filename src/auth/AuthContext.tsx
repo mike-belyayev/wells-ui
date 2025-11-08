@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { API_ENDPOINTS } from '../config/api'; // Add this import
+import { API_ENDPOINTS } from '../config/api';
 
 type User = {
   userEmail: string;
@@ -17,15 +17,6 @@ type AuthContextType = {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  register: (userData: {
-    userEmail: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    homeLocation: string;
-  }) => Promise<void>;
-  requestPasswordReset: (email: string) => Promise<boolean>;
-  resetPassword: (token: string, newPassword: string) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -43,7 +34,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(true);
       try {
         const token = localStorage.getItem('token');
-        console.log('Retrieved token:', token); // Debug log
+        console.log('Retrieved token:', token);
         
         if (!token) {
           console.log('No token available - logging out');
@@ -51,7 +42,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        // Use environment-based URL
         const response = await fetch(API_ENDPOINTS.AUTH_CHECK, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -59,7 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         });
 
-        console.log('Auth check response status:', response.status); // Debug log
+        console.log('Auth check response status:', response.status);
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -69,7 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         const userData = await response.json();
-        console.log('User data received:', userData); // Debug log
+        console.log('User data received:', userData);
         
         setUser({
           userEmail: userData.userEmail,
@@ -106,7 +96,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     setError(null);
     try {
-      // Use environment-based URL
       const response = await fetch(API_ENDPOINTS.LOGIN, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,9 +108,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const data = await response.json();
-      console.log('Login response:', data); // Keep this for debugging
+      console.log('Login response:', data);
 
-      // Check if we have a token in either location
       const authToken = data.token || 
                        (data.user?.tokens?.length > 0 ? data.user.tokens[0].token : null);
 
@@ -156,94 +144,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     navigate('/');
   };
 
-  const register = async (userData: {
-    userEmail: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    homeLocation: string;
-  }) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Use environment-based URL
-      const response = await fetch(API_ENDPOINTS.REGISTER, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(userData)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
-      }
-
-      return data;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const requestPasswordReset = async (email: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Note: You'll need to add this endpoint to your API_ENDPOINTS config
-      const response = await fetch(API_ENDPOINTS.FORGOT_PASSWORD, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email })
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Password reset failed');
-      }
-
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Password reset failed');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resetPassword = async (resetToken: string, newPassword: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Note: You'll need to add this endpoint to your API_ENDPOINTS config
-      const response = await fetch(API_ENDPOINTS.RESET_PASSWORD(resetToken), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ password: newPassword })
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Password reset failed');
-      }
-
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Password reset failed');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -252,9 +152,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         error,
         login,
         logout,
-        register,
-        requestPasswordReset,
-        resetPassword,
       }}
     >
       {children}

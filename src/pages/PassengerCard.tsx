@@ -8,7 +8,7 @@ interface PassengerCardProps {
   toDestination: string;
   type: 'incoming' | 'outgoing';
   confirmed: boolean;
-  numberOfPassengers?: number; // Add this optional prop
+  numberOfPassengers?: number;
 }
 
 export default function PassengerCard({ 
@@ -19,7 +19,7 @@ export default function PassengerCard({
   toDestination,
   type,
   confirmed,
-  numberOfPassengers // Add this to destructuring
+  numberOfPassengers
 }: PassengerCardProps) {
   const fullName = `${firstName} ${lastName}`;
   
@@ -38,11 +38,15 @@ export default function PassengerCard({
       <div className="passenger-info">
         <div className="passenger-name" data-tooltip={tooltipContent.trim()}>
           {firstName} {lastName}
-          {/* Show number of passengers in brackets if defined and greater than 0 */}
           {numberOfPassengers && numberOfPassengers > 0 && (
             <span className="passenger-count"> ({numberOfPassengers})</span>
           )}
         </div>
+        {jobRole && (
+          <div className="passenger-job">
+            {jobRole}
+          </div>
+        )}
       </div>
       <div className="passenger-route">
         {type !== 'outgoing' && <span className="route-location">{fromOrigin}</span>}
