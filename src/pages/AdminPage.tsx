@@ -33,6 +33,7 @@ import PassengersTab from '../components/admin/PassengersTab';
 import UsersTab from '../components/admin/UsersTab';
 import UnverifiedUsersTab from '../components/admin/UnverifiedUsersTab';
 import SitesTab from '../components/admin/SitesTab';
+import { API_ENDPOINTS } from '../config/api'; // Add this import
 
 interface Passenger {
   _id: string;
@@ -121,22 +122,22 @@ const AdminPage = () => {
 
         if (activeTab === 0) {
           setLoading(prev => ({ ...prev, passengers: true }));
-          const response = await fetch('https://wells-api.vercel.app/api/passengers', { headers });
+          const response = await fetch(API_ENDPOINTS.PASSENGERS, { headers }); // Updated
           const data = await response.json();
           setPassengers(data);
         } else if (activeTab === 1) {
           setLoading(prev => ({ ...prev, users: true }));
-          const response = await fetch('https://wells-api.vercel.app/api/users', { headers });
+          const response = await fetch(API_ENDPOINTS.USERS, { headers }); // Updated
           const data = await response.json();
           setUsers(data);
         } else if (activeTab === 2) {
           setLoading(prev => ({ ...prev, unverified: true }));
-          const response = await fetch('https://wells-api.vercel.app/api/users/unverified', { headers });
+          const response = await fetch(API_ENDPOINTS.UNVERIFIED_USERS, { headers }); // Updated
           const data = await response.json();
           setUnverifiedUsers(data);
         } else if (activeTab === 3) {
           setLoading(prev => ({ ...prev, sites: true }));
-          const response = await fetch('https://wells-api.vercel.app/api/sites', { headers });
+          const response = await fetch(API_ENDPOINTS.SITES, { headers }); // Updated
           const data = await response.json();
           setSites(data);
         }
@@ -216,10 +217,10 @@ const AdminPage = () => {
       let dataToSend;
 
       if (activeTab === 0) {
-        url = 'https://wells-api.vercel.app/api/passengers';
+        url = API_ENDPOINTS.PASSENGERS; // Updated
         dataToSend = currentItem;
       } else if (activeTab === 1) {
-        url = 'https://wells-api.vercel.app/api/users';
+        url = API_ENDPOINTS.USERS; // Updated
         const userForm = currentItem as UserForm;
         dataToSend = {
           userEmail: userForm.userEmail,
@@ -233,7 +234,7 @@ const AdminPage = () => {
       } else if (activeTab === 3) {
         // For sites, only update currentPOB
         const siteForm = currentItem as SiteForm;
-        url = `https://wells-api.vercel.app/api/sites/${siteForm.siteName}/pob`;
+        url = API_ENDPOINTS.SITE_POB(siteForm.siteName); // Updated
         dataToSend = {
           currentPOB: Number(siteForm.currentPOB)
         };
@@ -284,15 +285,15 @@ const AdminPage = () => {
       };
       
       if (activeTab === 0) {
-        const passengersResponse = await fetch('https://wells-api.vercel.app/api/passengers', { headers: headersForRefresh });
+        const passengersResponse = await fetch(API_ENDPOINTS.PASSENGERS, { headers: headersForRefresh }); // Updated
         setPassengers(await passengersResponse.json());
       } else if (activeTab === 1) {
-        const usersResponse = await fetch('https://wells-api.vercel.app/api/users', { headers: headersForRefresh });
+        const usersResponse = await fetch(API_ENDPOINTS.USERS, { headers: headersForRefresh }); // Updated
         setUsers(await usersResponse.json());
-        const unverifiedResponse = await fetch('https://wells-api.vercel.app/api/users/unverified', { headers: headersForRefresh });
+        const unverifiedResponse = await fetch(API_ENDPOINTS.UNVERIFIED_USERS, { headers: headersForRefresh }); // Updated
         setUnverifiedUsers(await unverifiedResponse.json());
       } else if (activeTab === 3) {
-        const sitesResponse = await fetch('https://wells-api.vercel.app/api/sites', { headers: headersForRefresh });
+        const sitesResponse = await fetch(API_ENDPOINTS.SITES, { headers: headersForRefresh }); // Updated
         setSites(await sitesResponse.json());
       }
 
@@ -308,7 +309,10 @@ const AdminPage = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const url = activeTab === 0 ? `https://wells-api.vercel.app/api/passengers/${id}` : `https://wells-api.vercel.app/api/users/${id}`;
+      const url = activeTab === 0 
+        ? API_ENDPOINTS.PASSENGER_BY_ID(id) // Updated
+        : API_ENDPOINTS.USER_BY_ID(id); // Updated
+      
       const response = await fetch(url, {
         method: 'DELETE',
         headers: {
@@ -342,7 +346,7 @@ const AdminPage = () => {
 
   const handleVerifyUser = async (userId: string) => {
     try {
-      const response = await fetch(`https://wells-api.vercel.app/api/users/verify/${userId}`, {
+      const response = await fetch(API_ENDPOINTS.VERIFY_USER(userId), { // Updated
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -358,7 +362,7 @@ const AdminPage = () => {
         severity: 'success'
       });
 
-      const unverifiedResponse = await fetch('https://wells-api.vercel.app/api/users/unverified', {
+      const unverifiedResponse = await fetch(API_ENDPOINTS.UNVERIFIED_USERS, { // Updated
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -376,7 +380,7 @@ const AdminPage = () => {
 
   const handleInitializeSites = async () => {
     try {
-      const response = await fetch('https://wells-api.vercel.app/api/sites/initialize', {
+      const response = await fetch(API_ENDPOINTS.INITIALIZE_SITES, { // Updated
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -392,7 +396,7 @@ const AdminPage = () => {
         severity: 'success'
       });
 
-      const sitesResponse = await fetch('https://wells-api.vercel.app/api/sites', {
+      const sitesResponse = await fetch(API_ENDPOINTS.SITES, { // Updated
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

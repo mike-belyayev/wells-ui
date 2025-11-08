@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API_ENDPOINTS } from '../config/api'; // Add this import
 
 type User = {
   userEmail: string;
@@ -24,7 +25,7 @@ type AuthContextType = {
     homeLocation: string;
   }) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<boolean>;
-   resetPassword: (token: string, newPassword: string) => Promise<boolean>;
+  resetPassword: (token: string, newPassword: string) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -38,57 +39,58 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Check authentication status on initial load and route changes
   useEffect(() => {
-// In your checkAuth function:
-const checkAuth = async () => {
-  setIsLoading(true);
-  try {
-    const token = localStorage.getItem('token');
-    console.log('Retrieved token:', token); // Debug log
-    
-    if (!token) {
-      console.log('No token available - logging out');
-      handleLogout();
-      return;
-    }
+    const checkAuth = async () => {
+      setIsLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        console.log('Retrieved token:', token); // Debug log
+        
+        if (!token) {
+          console.log('No token available - logging out');
+          handleLogout();
+          return;
+        }
 
-    const response = await fetch('https://wells-api.vercel.app/api/users/me', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        // Use environment-based URL
+        const response = await fetch(API_ENDPOINTS.AUTH_CHECK, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('Auth check response status:', response.status); // Debug log
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Auth check failed:', response.status, errorData);
+          handleLogout();
+          return;
+        }
+
+        const userData = await response.json();
+        console.log('User data received:', userData); // Debug log
+        
+        setUser({
+          userEmail: userData.userEmail,
+          isAdmin: userData.isAdmin,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          homeLocation: userData.homeLocation,
+          token
+        });
+
+        if (location.pathname === '/') {
+          navigate('/heli');
+        }
+      } catch (err) {
+        console.error('Auth check error:', err);
+        handleLogout();
+      } finally {
+        setIsLoading(false);
       }
-    });
-
-    console.log('Auth check response status:', response.status); // Debug log
+    };
     
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Auth check failed:', response.status, errorData);
-      handleLogout();
-      return;
-    }
-
-    const userData = await response.json();
-    console.log('User data received:', userData); // Debug log
-    
-    setUser({
-      userEmail: userData.userEmail,
-      isAdmin: userData.isAdmin,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      homeLocation: userData.homeLocation,
-      token
-    });
-
-    if (location.pathname === '/') {
-      navigate('/heli');
-    }
-  } catch (err) {
-    console.error('Auth check error:', err);
-    handleLogout();
-  } finally {
-    setIsLoading(false);
-  }
-};
     checkAuth();
   }, [location.pathname, navigate]);
 
@@ -100,52 +102,53 @@ const checkAuth = async () => {
     }
   };
 
-const login = async (userEmail: string, password: string) => {
-  setIsLoading(true);
-  setError(null);
-  try {
-    const response = await fetch('https://wells-api.vercel.app/api/users/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userEmail, password })
-    });
+  const login = async (userEmail: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Use environment-based URL
+      const response = await fetch(API_ENDPOINTS.LOGIN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userEmail, password })
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Login failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
+      }
+
+      const data = await response.json();
+      console.log('Login response:', data); // Keep this for debugging
+
+      // Check if we have a token in either location
+      const authToken = data.token || 
+                       (data.user?.tokens?.length > 0 ? data.user.tokens[0].token : null);
+
+      if (!authToken) {
+        throw new Error('No authentication token received from server');
+      }
+
+      localStorage.setItem('token', authToken);
+      
+      setUser({
+        userEmail: data.user.userEmail,
+        isAdmin: data.user.isAdmin,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        homeLocation: data.user.homeLocation,
+        token: authToken
+      });
+      
+      navigate('/heli');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setIsLoading(false);
     }
-
-    const data = await response.json();
-    console.log('Login response:', data); // Keep this for debugging
-
-    // Check if we have a token in either location
-    const authToken = data.token || 
-                     (data.user?.tokens?.length > 0 ? data.user.tokens[0].token : null);
-
-    if (!authToken) {
-      throw new Error('No authentication token received from server');
-    }
-
-    localStorage.setItem('token', authToken);
-    
-    setUser({
-      userEmail: data.user.userEmail,
-      isAdmin: data.user.isAdmin,
-      firstName: data.user.firstName,
-      lastName: data.user.lastName,
-      homeLocation: data.user.homeLocation,
-      token: authToken
-    });
-    
-    navigate('/heli');
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Login failed';
-    setError(message);
-    throw new Error(message);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -163,7 +166,8 @@ const login = async (userEmail: string, password: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('https://wells-api.vercel.app/api/users/register', {
+      // Use environment-based URL
+      const response = await fetch(API_ENDPOINTS.REGISTER, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -190,7 +194,8 @@ const login = async (userEmail: string, password: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('https://wells-api.vercel.app/api/users/forgot-password', {
+      // Note: You'll need to add this endpoint to your API_ENDPOINTS config
+      const response = await fetch(API_ENDPOINTS.FORGOT_PASSWORD, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -216,7 +221,8 @@ const login = async (userEmail: string, password: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`https://wells-api.vercel.app/api/users/reset-password/${resetToken}`, {
+      // Note: You'll need to add this endpoint to your API_ENDPOINTS config
+      const response = await fetch(API_ENDPOINTS.RESET_PASSWORD(resetToken), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

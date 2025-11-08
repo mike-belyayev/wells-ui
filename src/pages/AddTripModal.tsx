@@ -34,7 +34,7 @@ interface AddTripModalProps {
     toDestination: string;
     tripDate: string;
     confirmed: boolean;
-    numberOfPassengers?: number; // Add this line
+    numberOfPassengers?: number;
   }) => void;
 }
 
@@ -60,14 +60,14 @@ export default function AddTripModal({
   const [toDestination, setToDestination] = useState(tripType === 'incoming' ? currentLocation : 'NSC');
   const [tripDate, setTripDate] = useState<Date | null>(normalizeDate(selectedDate));
   const [confirmed, setConfirmed] = useState(false);
-  const [numberOfPassengers, setNumberOfPassengers] = useState<number | ''>(''); // Add this state
+  const [numberOfPassengers, setNumberOfPassengers] = useState<number | ''>('');
 
   useEffect(() => {
     setTripDate(normalizeDate(selectedDate));
     setFromOrigin(tripType === 'outgoing' ? currentLocation : 'NTM');
     setToDestination(tripType === 'incoming' ? currentLocation : 'NSC');
     setConfirmed(false);
-    setNumberOfPassengers(''); // Reset when modal opens
+    setNumberOfPassengers('');
   }, [selectedDate, tripType, currentLocation]);
 
   const handleSubmit = (e: React.FormEvent) => {

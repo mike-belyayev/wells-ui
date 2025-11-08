@@ -21,6 +21,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import type { Passenger, Trip } from './HeliPage';
+import { API_ENDPOINTS } from '../config/api'; // Add this import
 
 // Helper function to normalize dates (fix timezone issues)
 const normalizeDate = (dateString: string) => {
@@ -55,7 +56,7 @@ export default function EditTripModal({
   const [toDestination, setToDestination] = useState('NSC');
   const [tripDate, setTripDate] = useState<Date | null>(new Date());
   const [confirmed, setConfirmed] = useState(false);
-  const [numberOfPassengers, setNumberOfPassengers] = useState<number | ''>(''); // Add this state
+  const [numberOfPassengers, setNumberOfPassengers] = useState<number | ''>('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +74,7 @@ export default function EditTripModal({
       setTripDate(trip.tripDate ? normalizeDate(trip.tripDate) : new Date());
       setConfirmed(trip.confirmed || false);
       // Set numberOfPassengers from trip data, handle null/undefined
-      setNumberOfPassengers(trip.numberOfPassengers ?? ''); // Add this line
+      setNumberOfPassengers(trip.numberOfPassengers ?? '');
     }
     
     return () => {
@@ -83,7 +84,7 @@ export default function EditTripModal({
       setToDestination('NSC');
       setTripDate(new Date());
       setConfirmed(false);
-      setNumberOfPassengers(''); // Reset this too
+      setNumberOfPassengers('');
       setError(null);
       setIsUpdating(false);
       setIsDeleting(false);
@@ -123,7 +124,8 @@ export default function EditTripModal({
     };
 
     try {
-      const response = await fetch(`https://wells-api.vercel.app/api/trips/${trip._id}`, {
+      // Use environment-based URL
+      const response = await fetch(API_ENDPOINTS.TRIP_BY_ID(trip._id), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +156,8 @@ export default function EditTripModal({
     setError(null);
     
     try {
-      const response = await fetch(`https://wells-api.vercel.app/api/trips/${trip._id}`, {
+      // Use environment-based URL
+      const response = await fetch(API_ENDPOINTS.TRIP_BY_ID(trip._id), {
         method: 'DELETE',
       });
 

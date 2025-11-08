@@ -8,6 +8,7 @@ import LocationDropdown from './LocationDropdown';
 import PassengerCard from './PassengerCard';
 import AddTripModal from './AddTripModal';
 import EditTripModal from './EditTripModal';
+import { API_ENDPOINTS } from '../config/api'; // Add this import
 import './HeliPage.css';
 
 export interface Passenger {
@@ -74,8 +75,8 @@ const HeliPage = () => {
       setError(null);
       
       const [passengersRes, tripsRes] = await Promise.all([
-        fetch('https://wells-api.vercel.app/api/passengers'),
-        fetch('https://wells-api.vercel.app/api/trips')
+        fetch(API_ENDPOINTS.PASSENGERS), // Updated
+        fetch(API_ENDPOINTS.TRIPS) // Updated
       ]);
       
       if (!passengersRes.ok) throw new Error('Failed to fetch passengers');
@@ -180,7 +181,7 @@ const HeliPage = () => {
     if (!isAdmin) return;
     
     try {
-      const response = await fetch('https://wells-api.vercel.app/api/trips', {
+      const response = await fetch(API_ENDPOINTS.TRIPS, { // Updated
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -203,7 +204,7 @@ const HeliPage = () => {
     if (!isAdmin) return;
     
     try {
-      const response = await fetch(`https://wells-api.vercel.app/api/trips/${updatedTrip._id}`, {
+      const response = await fetch(API_ENDPOINTS.TRIP_BY_ID(updatedTrip._id), { // Updated
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -227,7 +228,7 @@ const HeliPage = () => {
     try {
       setTrips(prevTrips => prevTrips.filter(t => t._id !== tripId));
       
-      const response = await fetch(`https://wells-api.vercel.app/api/trips/${tripId}`, {
+      const response = await fetch(API_ENDPOINTS.TRIP_BY_ID(tripId), { // Updated
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${user?.token}`
@@ -235,7 +236,7 @@ const HeliPage = () => {
       });
 
       if (!response.ok && response.status !== 404) {
-        const tripsRes = await fetch('https://wells-api.vercel.app/api/trips');
+        const tripsRes = await fetch(API_ENDPOINTS.TRIPS); // Updated
         if (tripsRes.ok) {
           const tripsData = await tripsRes.json();
           setTrips(tripsData);
@@ -508,7 +509,7 @@ const HeliPage = () => {
         toDestination={trip.toDestination}
         type='incoming'
         confirmed={trip.confirmed}
-        numberOfPassengers={trip.numberOfPassengers} // Add this line
+        numberOfPassengers={trip.numberOfPassengers}
       />
     </div>
   ))}
@@ -552,7 +553,7 @@ const HeliPage = () => {
         toDestination={trip.toDestination}
         type='outgoing'
         confirmed={trip.confirmed}
-        numberOfPassengers={trip.numberOfPassengers} // Add this line
+        numberOfPassengers={trip.numberOfPassengers}
       />
     </div>
   ))}
