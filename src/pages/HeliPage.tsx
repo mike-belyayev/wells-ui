@@ -8,7 +8,7 @@ import LocationDropdown from './LocationDropdown';
 import PassengerCard from './PassengerCard';
 import AddTripModal from './AddTripModal';
 import EditTripModal from './EditTripModal';
-import { API_ENDPOINTS } from '../config/api'; // Add this import
+import { API_ENDPOINTS } from '../config/api';
 import './HeliPage.css';
 
 export interface Passenger {
@@ -28,6 +28,14 @@ export interface Trip {
   numberOfPassengers?: number;
 }
 
+interface Site {
+  _id: string;
+  siteName: string;
+  currentPOB: number;
+  maximumPOB: number;
+  pobUpdatedDate: string;
+}
+
 interface DayData {
   date: Date;
   incoming: Trip[];
@@ -35,12 +43,64 @@ interface DayData {
   pob: number;
 }
 
+// Helper function to get passenger count from a trip
+const getPassengerCount = (trip: Trip): number => {
+  return trip.numberOfPassengers && trip.numberOfPassengers > 1 
+    ? trip.numberOfPassengers 
+    : 1;
+};
+
+// Calculate POB for a specific day based on site data and trips
+const calculatePOB = (
+  date: Date, 
+  currentLocation: string, 
+  allTrips: Trip[], 
+  sites: Site[]
+): number => {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  
+  // Find the site data for current location
+  const site = sites.find(s => s.siteName === currentLocation);
+  if (!site) return 0;
+
+  // Get all trips for this location up to and including the target date
+  const relevantTrips = allTrips.filter(trip => 
+    (trip.toDestination === currentLocation || trip.fromOrigin === currentLocation) &&
+    trip.tripDate <= dateStr
+  ).sort((a, b) => new Date(a.tripDate).getTime() - new Date(b.tripDate).getTime());
+
+  // Start with the site's base POB
+  let pob = site.currentPOB;
+
+  // Calculate net change from all trips up to this date
+  let netChange = 0;
+  
+  relevantTrips.forEach(trip => {
+    const passengerCount = getPassengerCount(trip);
+    
+    if (trip.toDestination === currentLocation) {
+      // Incoming trip - add passengers
+      netChange += passengerCount;
+    } else if (trip.fromOrigin === currentLocation) {
+      // Outgoing trip - subtract passengers
+      netChange -= passengerCount;
+    }
+  });
+
+  const calculatedPOB = Math.max(0, pob + netChange);
+  
+  // Ensure POB doesn't exceed maximum
+  const maximumPOB = site.maximumPOB || 200; // Default to 200 if not set
+  return Math.min(calculatedPOB, maximumPOB);
+};
+
 const HeliPage = () => {
   const { logout, user } = useAuth();
   const isAdmin = user?.isAdmin || false;
   const [currentLocation, setCurrentLocation] = useState('NSC');
   const [passengers, setPassengers] = useState<Passenger[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
   const [weeksData, setWeeksData] = useState<DayData[][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,19 +134,23 @@ const HeliPage = () => {
       setLoading(true);
       setError(null);
       
-      const [passengersRes, tripsRes] = await Promise.all([
-        fetch(API_ENDPOINTS.PASSENGERS), // Updated
-        fetch(API_ENDPOINTS.TRIPS) // Updated
+      const [passengersRes, tripsRes, sitesRes] = await Promise.all([
+        fetch(API_ENDPOINTS.PASSENGERS),
+        fetch(API_ENDPOINTS.TRIPS),
+        fetch(API_ENDPOINTS.SITES)
       ]);
       
       if (!passengersRes.ok) throw new Error('Failed to fetch passengers');
       if (!tripsRes.ok) throw new Error('Failed to fetch trips');
+      if (!sitesRes.ok) throw new Error('Failed to fetch sites');
       
       const passengersData = await passengersRes.json();
       const tripsData = await tripsRes.json();
+      const sitesData = await sitesRes.json();
       
       setPassengers(passengersData);
       setTrips(tripsData);
+      setSites(sitesData);
     } catch (error) {
       console.error('Error fetching data:', error);
       setError(error instanceof Error ? error.message : 'Unknown error');
@@ -154,11 +218,11 @@ const HeliPage = () => {
           outgoing: relevantTrips
             .filter(trip => trip.fromOrigin === currentLocation)
             .sort(sortByConfirmed),
-          pob: Math.floor(Math.random() * 50) + 100
+          pob: calculatePOB(date, currentLocation, trips, sites)
         };
       });
     });
-  }, [trips, currentLocation, weekOffset]);
+  }, [trips, currentLocation, weekOffset, sites]);
 
   useEffect(() => {
     const generatedWeeks = generateWeeks();
@@ -181,7 +245,7 @@ const HeliPage = () => {
     if (!isAdmin) return;
     
     try {
-      const response = await fetch(API_ENDPOINTS.TRIPS, { // Updated
+      const response = await fetch(API_ENDPOINTS.TRIPS, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +268,7 @@ const HeliPage = () => {
     if (!isAdmin) return;
     
     try {
-      const response = await fetch(API_ENDPOINTS.TRIP_BY_ID(updatedTrip._id), { // Updated
+      const response = await fetch(API_ENDPOINTS.TRIP_BY_ID(updatedTrip._id), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -228,7 +292,7 @@ const HeliPage = () => {
     try {
       setTrips(prevTrips => prevTrips.filter(t => t._id !== tripId));
       
-      const response = await fetch(API_ENDPOINTS.TRIP_BY_ID(tripId), { // Updated
+      const response = await fetch(API_ENDPOINTS.TRIP_BY_ID(tripId), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${user?.token}`
@@ -236,7 +300,7 @@ const HeliPage = () => {
       });
 
       if (!response.ok && response.status !== 404) {
-        const tripsRes = await fetch(API_ENDPOINTS.TRIPS); // Updated
+        const tripsRes = await fetch(API_ENDPOINTS.TRIPS);
         if (tripsRes.ok) {
           const tripsData = await tripsRes.json();
           setTrips(tripsData);
@@ -493,27 +557,27 @@ const HeliPage = () => {
                         onDrop={(e) => isAdmin && handleDrop(e, day.date, 'incoming')}
                       >
                         <div className="passenger-cards-container">
-  {day.incoming.map((trip, i) => (
-    <div 
-      key={i}
-      onClick={() => isAdmin && setEditingTrip(trip)}
-      className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
-      draggable={isAdmin}
-      onDragStart={() => isAdmin && handleDragStart(trip, 'incoming')}
-    >
-      <PassengerCard
-        firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-        lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-        jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-        fromOrigin={trip.fromOrigin}
-        toDestination={trip.toDestination}
-        type='incoming'
-        confirmed={trip.confirmed}
-        numberOfPassengers={trip.numberOfPassengers}
-      />
-    </div>
-  ))}
-</div>
+                          {day.incoming.map((trip, i) => (
+                            <div 
+                              key={i}
+                              onClick={() => isAdmin && setEditingTrip(trip)}
+                              className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
+                              draggable={isAdmin}
+                              onDragStart={() => isAdmin && handleDragStart(trip, 'incoming')}
+                            >
+                              <PassengerCard
+                                firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                                lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                                jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                                fromOrigin={trip.fromOrigin}
+                                toDestination={trip.toDestination}
+                                type='incoming'
+                                confirmed={trip.confirmed}
+                                numberOfPassengers={trip.numberOfPassengers}
+                              />
+                            </div>
+                          ))}
+                        </div>
                         {isAdmin && (
                           <button
                             onClick={() => {
@@ -537,27 +601,27 @@ const HeliPage = () => {
                         onDrop={(e) => isAdmin && handleDrop(e, day.date, 'outgoing')}
                       >
                         <div className="passenger-cards-container">
-  {day.outgoing.map((trip, i) => (
-    <div 
-      key={i}
-      onClick={() => isAdmin && setEditingTrip(trip)}
-      className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
-      draggable={isAdmin}
-      onDragStart={() => isAdmin && handleDragStart(trip, 'outgoing')}
-    >
-      <PassengerCard
-        firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-        lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-        jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-        fromOrigin={trip.fromOrigin}
-        toDestination={trip.toDestination}
-        type='outgoing'
-        confirmed={trip.confirmed}
-        numberOfPassengers={trip.numberOfPassengers}
-      />
-    </div>
-  ))}
-</div>
+                          {day.outgoing.map((trip, i) => (
+                            <div 
+                              key={i}
+                              onClick={() => isAdmin && setEditingTrip(trip)}
+                              className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
+                              draggable={isAdmin}
+                              onDragStart={() => isAdmin && handleDragStart(trip, 'outgoing')}
+                            >
+                              <PassengerCard
+                                firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                                lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                                jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                                fromOrigin={trip.fromOrigin}
+                                toDestination={trip.toDestination}
+                                type='outgoing'
+                                confirmed={trip.confirmed}
+                                numberOfPassengers={trip.numberOfPassengers}
+                              />
+                            </div>
+                          ))}
+                        </div>
                         {isAdmin && (
                           <button
                             onClick={() => {
