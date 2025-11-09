@@ -1,5 +1,5 @@
-import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, TextField } from '@mui/material';
-import { Edit, Delete, Search, Check, Close } from '@mui/icons-material';
+import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, TextField, Button } from '@mui/material';
+import { Edit, Delete, Search, Check, Close, PersonAdd } from '@mui/icons-material';
 
 // Define interfaces locally
 interface User {
@@ -9,7 +9,6 @@ interface User {
   lastName: string;
   homeLocation: string;
   isAdmin: boolean;
-  isVerified: boolean;
   lastLogin?: string;
 }
 
@@ -32,7 +31,7 @@ const UsersTab = ({
 }: UsersTabProps) => {
   return (
     <>
-      <Box display="flex" justifyContent="flex-start" mb={2}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <TextField
           variant="outlined"
           size="small"
@@ -44,6 +43,19 @@ const UsersTab = ({
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
         />
+        <Button
+          variant="contained"
+          startIcon={<PersonAdd />}
+          onClick={() => onOpenDialog(null)}
+          sx={{
+            backgroundColor: '#1976d2',
+            '&:hover': {
+              backgroundColor: '#1565c0'
+            }
+          }}
+        >
+          New User
+        </Button>
       </Box>
       <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
         <Table stickyHeader>
@@ -54,6 +66,7 @@ const UsersTab = ({
               <TableCell>Last Name</TableCell>
               <TableCell>Location</TableCell>
               <TableCell>Admin</TableCell>
+              <TableCell>Last Login</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -66,6 +79,9 @@ const UsersTab = ({
                 <TableCell>{user.homeLocation}</TableCell>
                 <TableCell>
                   {user.isAdmin ? <Check color="success" /> : <Close color="error" />}
+                </TableCell>
+                <TableCell>
+                  {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                 </TableCell>
                 <TableCell>
                   <IconButton

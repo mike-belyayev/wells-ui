@@ -31,9 +31,8 @@ import {
 } from '@mui/icons-material';
 import PassengersTab from '../components/admin/PassengersTab';
 import UsersTab from '../components/admin/UsersTab';
-import UnverifiedUsersTab from '../components/admin/UnverifiedUsersTab';
 import SitesTab from '../components/admin/SitesTab';
-import { API_ENDPOINTS } from '../config/api'; // Add this import
+import { API_ENDPOINTS } from '../config/api';
 
 interface Passenger {
   _id: string;
@@ -49,7 +48,6 @@ interface User {
   lastName: string;
   homeLocation: string;
   isAdmin: boolean;
-  isVerified: boolean;
   lastLogin?: string;
 }
 
@@ -77,7 +75,6 @@ interface UserForm {
   lastName: string;
   homeLocation: string;
   isAdmin: boolean;
-  isVerified: boolean;
 }
 
 interface SiteForm {
@@ -94,12 +91,10 @@ const AdminPage = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [passengers, setPassengers] = useState<Passenger[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [unverifiedUsers, setUnverifiedUsers] = useState<User[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState({
     passengers: false,
     users: false,
-    unverified: false,
     sites: false
   });
   const [openDialog, setOpenDialog] = useState(false);
@@ -122,22 +117,17 @@ const AdminPage = () => {
 
         if (activeTab === 0) {
           setLoading(prev => ({ ...prev, passengers: true }));
-          const response = await fetch(API_ENDPOINTS.PASSENGERS, { headers }); // Updated
+          const response = await fetch(API_ENDPOINTS.PASSENGERS, { headers });
           const data = await response.json();
           setPassengers(data);
         } else if (activeTab === 1) {
           setLoading(prev => ({ ...prev, users: true }));
-          const response = await fetch(API_ENDPOINTS.USERS, { headers }); // Updated
+          const response = await fetch(API_ENDPOINTS.USERS, { headers });
           const data = await response.json();
           setUsers(data);
         } else if (activeTab === 2) {
-          setLoading(prev => ({ ...prev, unverified: true }));
-          const response = await fetch(API_ENDPOINTS.UNVERIFIED_USERS, { headers }); // Updated
-          const data = await response.json();
-          setUnverifiedUsers(data);
-        } else if (activeTab === 3) {
           setLoading(prev => ({ ...prev, sites: true }));
-          const response = await fetch(API_ENDPOINTS.SITES, { headers }); // Updated
+          const response = await fetch(API_ENDPOINTS.SITES, { headers });
           const data = await response.json();
           setSites(data);
         }
@@ -151,7 +141,6 @@ const AdminPage = () => {
         setLoading({
           passengers: false,
           users: false,
-          unverified: false,
           sites: false
         });
       }
@@ -169,7 +158,7 @@ const AdminPage = () => {
       } as UserForm);
     } else if (item && activeTab === 0) {
       setCurrentItem(item as PassengerForm);
-    } else if (item && activeTab === 3) {
+    } else if (item && activeTab === 2) {
       setCurrentItem(item as SiteForm);
     } else if (activeTab === 0) {
       setCurrentItem({
@@ -178,7 +167,18 @@ const AdminPage = () => {
         lastName: '',
         jobRole: ''
       });
-    } else if (activeTab === 3) {
+    } else if (activeTab === 1) {
+      setCurrentItem({
+        _id: '',
+        userEmail: '',
+        password: '',
+        confirmPassword: '',
+        firstName: '',
+        lastName: '',
+        homeLocation: '',
+        isAdmin: false
+      });
+    } else if (activeTab === 2) {
       setCurrentItem({
         _id: '',
         siteName: '',
@@ -200,118 +200,139 @@ const AdminPage = () => {
     setCurrentItem(prev => (prev ? { ...prev, [name]: value } : null));
   };
 
-  const handleSave = async () => {
-    try {
-      if (activeTab === 1 && !isEditing) {
-        const userForm = currentItem as UserForm;
-        if (!userForm.password || userForm.password.length < 6) {
-          throw new Error('Password must be at least 6 characters');
-        }
-        if (userForm.password !== userForm.confirmPassword) {
-          throw new Error("Passwords don't match");
-        }
+const handleSave = async () => {
+  try {
+    if (activeTab === 1) {
+      const userForm = currentItem as UserForm;
+      
+      // For new users, require password
+      if (!isEditing && (!userForm.password || userForm.password.length < 6)) {
+        throw new Error('Password must be at least 6 characters');
       }
+      
+      // For new users or when password is provided during edit, validate confirmation
+      if ((!isEditing || userForm.password) && userForm.password !== userForm.confirmPassword) {
+        throw new Error("Passwords don't match");
+      }
+    }
 
-      let response;
-      let url;
-      let dataToSend;
+    let response;
+    let url;
+    let dataToSend;
 
-      if (activeTab === 0) {
-        url = API_ENDPOINTS.PASSENGERS; // Updated
-        dataToSend = currentItem;
-      } else if (activeTab === 1) {
-        url = API_ENDPOINTS.USERS; // Updated
+    if (activeTab === 0) {
+      url = API_ENDPOINTS.PASSENGERS;
+      dataToSend = currentItem;
+    } else if (activeTab === 1) {
+      // Use different endpoints for creating vs editing users
+      if (isEditing) {
+        url = API_ENDPOINTS.USER_BY_ID((currentItem as UserForm)._id);
         const userForm = currentItem as UserForm;
         dataToSend = {
           userEmail: userForm.userEmail,
-          ...(isEditing ? {} : { password: userForm.password }),
+          ...(userForm.password && { password: userForm.password }),
           firstName: userForm.firstName,
           lastName: userForm.lastName,
           homeLocation: userForm.homeLocation,
-          isAdmin: userForm.isAdmin,
-          isVerified: userForm.isVerified
+          isAdmin: userForm.isAdmin
         };
-      } else if (activeTab === 3) {
-        // For sites, only update currentPOB
-        const siteForm = currentItem as SiteForm;
-        url = API_ENDPOINTS.SITE_POB(siteForm.siteName); // Updated
-        dataToSend = {
-          currentPOB: Number(siteForm.currentPOB)
-        };
-      }
-
-      const id = currentItem?._id;
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      };
-
-      if (isEditing && id && activeTab !== 3) {
-        response = await fetch(`${url}/${id}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify(dataToSend),
-        });
-      } else if (activeTab === 3) {
-        // For sites, always use PUT to the POB endpoint
-        response = await fetch(url!, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify(dataToSend),
-        });
       } else {
-        response = await fetch(url!, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(dataToSend),
-        });
+        // Use register endpoint for new users
+        url = API_ENDPOINTS.REGISTER; // Make sure this points to /api/users/register
+        const userForm = currentItem as UserForm;
+        dataToSend = {
+          userEmail: userForm.userEmail,
+          password: userForm.password,
+          firstName: userForm.firstName,
+          lastName: userForm.lastName,
+          homeLocation: userForm.homeLocation,
+          isAdmin: userForm.isAdmin
+        };
       }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || errorData.error || 'Operation failed');
-      }
-
-      setSnackbar({
-        open: true,
-        message: `Successfully ${isEditing ? 'updated' : 'created'}`,
-        severity: 'success'
-      });
-
-      // Refresh the data
-      const headersForRefresh = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+    } else if (activeTab === 2) {
+      const siteForm = currentItem as SiteForm;
+      url = API_ENDPOINTS.SITE_POB(siteForm.siteName);
+      dataToSend = {
+        currentPOB: Number(siteForm.currentPOB)
       };
-      
-      if (activeTab === 0) {
-        const passengersResponse = await fetch(API_ENDPOINTS.PASSENGERS, { headers: headersForRefresh }); // Updated
-        setPassengers(await passengersResponse.json());
-      } else if (activeTab === 1) {
-        const usersResponse = await fetch(API_ENDPOINTS.USERS, { headers: headersForRefresh }); // Updated
-        setUsers(await usersResponse.json());
-        const unverifiedResponse = await fetch(API_ENDPOINTS.UNVERIFIED_USERS, { headers: headersForRefresh }); // Updated
-        setUnverifiedUsers(await unverifiedResponse.json());
-      } else if (activeTab === 3) {
-        const sitesResponse = await fetch(API_ENDPOINTS.SITES, { headers: headersForRefresh }); // Updated
-        setSites(await sitesResponse.json());
-      }
+    }
 
-      handleCloseDialog();
-    } catch (err) {
-      setSnackbar({
-        open: true,
-        message: err instanceof Error ? err.message : 'Operation failed',
-        severity: 'error'
+    const id = currentItem?._id;
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+
+    if (activeTab === 1 && !isEditing) {
+      // For new user registration, use POST to register endpoint
+      response = await fetch(url!, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(dataToSend),
+      });
+    } else if (isEditing && id && activeTab !== 2) {
+      response = await fetch(`${url}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(dataToSend),
+      });
+    } else if (activeTab === 2) {
+      response = await fetch(url!, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(dataToSend),
+      });
+    } else {
+      response = await fetch(url!, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(dataToSend),
       });
     }
-  };
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || errorData.error || 'Operation failed');
+    }
+
+    setSnackbar({
+      open: true,
+      message: `Successfully ${isEditing ? 'updated' : 'created'}`,
+      severity: 'success'
+    });
+
+    // Refresh the data
+    const headersForRefresh = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    
+    if (activeTab === 0) {
+      const passengersResponse = await fetch(API_ENDPOINTS.PASSENGERS, { headers: headersForRefresh });
+      setPassengers(await passengersResponse.json());
+    } else if (activeTab === 1) {
+      const usersResponse = await fetch(API_ENDPOINTS.USERS, { headers: headersForRefresh });
+      setUsers(await usersResponse.json());
+    } else if (activeTab === 2) {
+      const sitesResponse = await fetch(API_ENDPOINTS.SITES, { headers: headersForRefresh });
+      setSites(await sitesResponse.json());
+    }
+
+    handleCloseDialog();
+  } catch (err) {
+    setSnackbar({
+      open: true,
+      message: err instanceof Error ? err.message : 'Operation failed',
+      severity: 'error'
+    });
+  }
+};
 
   const handleDelete = async (id: string) => {
     try {
       const url = activeTab === 0 
-        ? API_ENDPOINTS.PASSENGER_BY_ID(id) // Updated
-        : API_ENDPOINTS.USER_BY_ID(id); // Updated
+        ? API_ENDPOINTS.PASSENGER_BY_ID(id)
+        : API_ENDPOINTS.USER_BY_ID(id);
       
       const response = await fetch(url, {
         method: 'DELETE',
@@ -333,7 +354,6 @@ const AdminPage = () => {
         setPassengers(passengers.filter(p => p._id !== id));
       } else {
         setUsers(users.filter(u => u._id !== id));
-        setUnverifiedUsers(unverifiedUsers.filter(u => u._id !== id));
       }
     } catch (err) {
       setSnackbar({
@@ -344,43 +364,9 @@ const AdminPage = () => {
     }
   };
 
-  const handleVerifyUser = async (userId: string) => {
-    try {
-      const response = await fetch(API_ENDPOINTS.VERIFY_USER(userId), { // Updated
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) throw new Error('Verification failed');
-
-      setSnackbar({
-        open: true,
-        message: 'User verified successfully',
-        severity: 'success'
-      });
-
-      const unverifiedResponse = await fetch(API_ENDPOINTS.UNVERIFIED_USERS, { // Updated
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      setUnverifiedUsers(await unverifiedResponse.json());
-    } catch (err) {
-      setSnackbar({
-        open: true,
-        message: err instanceof Error ? err.message : 'Verification failed',
-        severity: 'error'
-      });
-    }
-  };
-
   const handleInitializeSites = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.INITIALIZE_SITES, { // Updated
+      const response = await fetch(API_ENDPOINTS.INITIALIZE_SITES, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -396,7 +382,7 @@ const AdminPage = () => {
         severity: 'success'
       });
 
-      const sitesResponse = await fetch(API_ENDPOINTS.SITES, { // Updated
+      const sitesResponse = await fetch(API_ENDPOINTS.SITES, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -503,12 +489,11 @@ const AdminPage = () => {
           >
             <Tab label="Passengers" icon={<Person />} />
             <Tab label="Users" icon={<People />} />
-            <Tab label="Unverified Users" icon={<People />} />
             <Tab label="Sites" icon={<LocationOn />} />
           </Tabs>
 
           <Box sx={{ mt: 3 }}>
-            {loading.passengers || loading.users || loading.unverified || loading.sites ? (
+            {loading.passengers || loading.users || loading.sites ? (
               <Box display="flex" justifyContent="center" p={4}>
                 <CircularProgress />
               </Box>
@@ -535,15 +520,6 @@ const AdminPage = () => {
                   />
                 )}
                 {activeTab === 2 && (
-                  <UnverifiedUsersTab
-                    users={unverifiedUsers}
-                    searchTerm={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    onVerifyUser={handleVerifyUser}
-                    filterUsers={filterUsers}
-                  />
-                )}
-                {activeTab === 3 && (
                   <SitesTab
                     sites={sites}
                     searchTerm={searchTerm}
@@ -563,7 +539,7 @@ const AdminPage = () => {
 
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {isEditing ? 'Edit' : 'Add New'} {activeTab === 0 ? 'Passenger' : activeTab === 3 ? 'Site' : 'User'}
+          {isEditing ? 'Edit' : 'Add New'} {activeTab === 0 ? 'Passenger' : activeTab === 2 ? 'Site' : 'User'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
@@ -604,38 +580,39 @@ const AdminPage = () => {
                   fullWidth
                   type="email"
                   required
+                  disabled={isEditing} // Can't change email when editing
                 />
-                {!isEditing && (
-                  <>
-                    <TextField
-                      name="password"
-                      label="Password"
-                      type="password"
-                      value={(currentItem as UserForm)?.password || ''}
-                      onChange={handleInputChange}
-                      fullWidth
-                      required
-                    />
-                    <TextField
-                      name="confirmPassword"
-                      label="Confirm Password"
-                      type="password"
-                      value={(currentItem as UserForm)?.confirmPassword || ''}
-                      onChange={handleInputChange}
-                      fullWidth
-                      required
-                      error={
-                        (currentItem as UserForm)?.password !== 
-                        (currentItem as UserForm)?.confirmPassword
-                      }
-                      helperText={
-                        (currentItem as UserForm)?.password !== 
-                        (currentItem as UserForm)?.confirmPassword ? 
-                        "Passwords don't match" : ""
-                      }
-                    />
-                  </>
-                )}
+                
+                {/* Password fields - always show for new users, optional for editing */}
+                <TextField
+                  name="password"
+                  label={isEditing ? "New Password (leave blank to keep current)" : "Password"}
+                  type="password"
+                  value={(currentItem as UserForm)?.password || ''}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required={!isEditing}
+                  helperText={isEditing ? "Leave blank to keep current password" : "Password must be at least 6 characters"}
+                />
+                <TextField
+                  name="confirmPassword"
+                  label="Confirm Password"
+                  type="password"
+                  value={(currentItem as UserForm)?.confirmPassword || ''}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required={!isEditing || (currentItem as UserForm)?.password !== ''}
+                  error={
+                    (currentItem as UserForm)?.password !== 
+                    (currentItem as UserForm)?.confirmPassword
+                  }
+                  helperText={
+                    (currentItem as UserForm)?.password !== 
+                    (currentItem as UserForm)?.confirmPassword ? 
+                    "Passwords don't match" : ""
+                  }
+                />
+                
                 <TextField
                   name="firstName"
                   label="First Name"
@@ -679,7 +656,7 @@ const AdminPage = () => {
                   <MenuItem value="true">Yes</MenuItem>
                 </TextField>
               </>
-            ) : activeTab === 3 ? (
+            ) : activeTab === 2 ? (
               <>
                 <TextField
                   name="siteName"
@@ -709,7 +686,7 @@ const AdminPage = () => {
                   fullWidth
                   required
                   inputProps={{ min: 1 }}
-                  disabled={true} // Maximum POB is not editable via API
+                  disabled={true}
                   helperText="Maximum POB cannot be edited"
                 />
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
