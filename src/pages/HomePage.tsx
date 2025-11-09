@@ -10,13 +10,13 @@ import {
 import { useAuth } from '../auth/AuthContext';
 
 const HomePage = () => {
-  const [email, setEmail] = useState('');
+  const [userName, setUserName] = useState(''); // Changed from email to userName
   const [password, setPassword] = useState('');
   const { login, error, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(email, password);
+    await login(userName, password); // Changed from email to userName
   };
 
   return (
@@ -54,13 +54,14 @@ const HomePage = () => {
 
         <form onSubmit={handleSubmit}>
           <TextField
-            label="Email Address"
-            type="email"
+            label="Username" // Changed from "Email Address"
+            type="text" // Changed from "email"
             fullWidth
             margin="normal"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={userName} // Changed from email to userName
+            onChange={(e) => setUserName(e.target.value)} // Changed from setEmail to setUserName
             required
+            helperText="Enter your username (letters, numbers, and hyphens only)"
           />
           
           <TextField

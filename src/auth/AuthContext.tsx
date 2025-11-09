@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config/api';
 
 type User = {
-  userEmail: string;
+  userName: string;
   isAdmin: boolean;
   firstName?: string;
   lastName?: string;
@@ -15,7 +15,7 @@ type AuthContextType = {
   user: User;
   isLoading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('User data received:', userData);
         
         setUser({
-          userEmail: userData.userEmail,
+          userName: userData.userName, // Changed from userEmail to userName
           isAdmin: userData.isAdmin,
           firstName: userData.firstName,
           lastName: userData.lastName,
@@ -92,14 +92,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const login = async (userEmail: string, password: string) => {
+  const login = async (userName: string, password: string) => { // Changed parameter from userEmail to userName
     setIsLoading(true);
     setError(null);
     try {
       const response = await fetch(API_ENDPOINTS.LOGIN, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userEmail, password })
+        body: JSON.stringify({ userName, password }) // Changed from userEmail to userName
       });
 
       if (!response.ok) {
@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem('token', authToken);
       
       setUser({
-        userEmail: data.user.userEmail,
+        userName: data.user.userName, // Changed from userEmail to userName
         isAdmin: data.user.isAdmin,
         firstName: data.user.firstName,
         lastName: data.user.lastName,

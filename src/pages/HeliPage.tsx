@@ -628,7 +628,7 @@ const generateWeeks = useCallback(() => {
               maxWidth: 300,
               color: 'white'
             }}>
-              {user?.userEmail}
+              {user?.userName}
               {isAdmin && " (admin)"}
             </Typography>
             

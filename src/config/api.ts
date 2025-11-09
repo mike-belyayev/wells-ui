@@ -1,12 +1,12 @@
 // ============================================
 // DEVELOPMENT - Local API
 // ============================================
-// const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:3000';
 
 // ============================================
 // PRODUCTION - Vercel API (UNCOMMENT FOR DEPLOYMENT)
 // ============================================
-const API_BASE_URL = 'https://wells-api.vercel.app';
+// const API_BASE_URL = 'https://wells-api.vercel.app';
 
 console.log('API Base URL:', API_BASE_URL);
 

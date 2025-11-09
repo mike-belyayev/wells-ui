@@ -4,7 +4,7 @@ import { Edit, Delete, Search, Check, Close, PersonAdd } from '@mui/icons-materi
 // Define interfaces locally
 interface User {
   _id: string;
-  userEmail: string;
+  userName: string; // Changed from userEmail to userName
   firstName: string;
   lastName: string;
   homeLocation: string;
@@ -61,7 +61,7 @@ const UsersTab = ({
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>Email</TableCell>
+              <TableCell>Username</TableCell> {/* Changed from Email to Username */}
               <TableCell>First Name</TableCell>
               <TableCell>Last Name</TableCell>
               <TableCell>Location</TableCell>
@@ -73,7 +73,7 @@ const UsersTab = ({
           <TableBody>
             {users.filter(filterUsers).map((user) => (
               <TableRow key={user._id}>
-                <TableCell>{user.userEmail}</TableCell>
+                <TableCell>{user.userName}</TableCell> {/* Changed from userEmail to userName */}
                 <TableCell>{user.firstName}</TableCell>
                 <TableCell>{user.lastName}</TableCell>
                 <TableCell>{user.homeLocation}</TableCell>

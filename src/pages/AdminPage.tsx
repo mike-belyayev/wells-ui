@@ -43,7 +43,7 @@ interface Passenger {
 
 interface User {
   _id: string;
-  userEmail: string;
+  userName: string; // Changed from userEmail to userName
   firstName: string;
   lastName: string;
   homeLocation: string;
@@ -68,7 +68,7 @@ interface PassengerForm {
 
 interface UserForm {
   _id: string;
-  userEmail: string;
+  userName: string; // Changed from userEmail to userName
   password: string;
   confirmPassword: string;
   firstName: string;
@@ -170,7 +170,7 @@ const AdminPage = () => {
     } else if (activeTab === 1) {
       setCurrentItem({
         _id: '',
-        userEmail: '',
+        userName: '', // Changed from userEmail to userName
         password: '',
         confirmPassword: '',
         firstName: '',
@@ -200,133 +200,133 @@ const AdminPage = () => {
     setCurrentItem(prev => (prev ? { ...prev, [name]: value } : null));
   };
 
-const handleSave = async () => {
-  try {
-    if (activeTab === 1) {
-      const userForm = currentItem as UserForm;
-      
-      // For new users, require password
-      if (!isEditing && (!userForm.password || userForm.password.length < 6)) {
-        throw new Error('Password must be at least 6 characters');
-      }
-      
-      // For new users or when password is provided during edit, validate confirmation
-      if ((!isEditing || userForm.password) && userForm.password !== userForm.confirmPassword) {
-        throw new Error("Passwords don't match");
-      }
-    }
-
-    let response;
-    let url;
-    let dataToSend;
-
-    if (activeTab === 0) {
-      url = API_ENDPOINTS.PASSENGERS;
-      dataToSend = currentItem;
-    } else if (activeTab === 1) {
-      // Use different endpoints for creating vs editing users
-      if (isEditing) {
-        url = API_ENDPOINTS.USER_BY_ID((currentItem as UserForm)._id);
+  const handleSave = async () => {
+    try {
+      if (activeTab === 1) {
         const userForm = currentItem as UserForm;
+        
+        // For new users, require password
+        if (!isEditing && (!userForm.password || userForm.password.length < 6)) {
+          throw new Error('Password must be at least 6 characters');
+        }
+        
+        // For new users or when password is provided during edit, validate confirmation
+        if ((!isEditing || userForm.password) && userForm.password !== userForm.confirmPassword) {
+          throw new Error("Passwords don't match");
+        }
+      }
+
+      let response;
+      let url;
+      let dataToSend;
+
+      if (activeTab === 0) {
+        url = API_ENDPOINTS.PASSENGERS;
+        dataToSend = currentItem;
+      } else if (activeTab === 1) {
+        // Use different endpoints for creating vs editing users
+        if (isEditing) {
+          url = API_ENDPOINTS.USER_BY_ID((currentItem as UserForm)._id);
+          const userForm = currentItem as UserForm;
+          dataToSend = {
+            userName: userForm.userName, // Changed from userEmail to userName
+            ...(userForm.password && { password: userForm.password }),
+            firstName: userForm.firstName,
+            lastName: userForm.lastName,
+            homeLocation: userForm.homeLocation,
+            isAdmin: userForm.isAdmin
+          };
+        } else {
+          // Use register endpoint for new users
+          url = API_ENDPOINTS.REGISTER;
+          const userForm = currentItem as UserForm;
+          dataToSend = {
+            userName: userForm.userName, // Changed from userEmail to userName
+            password: userForm.password,
+            firstName: userForm.firstName,
+            lastName: userForm.lastName,
+            homeLocation: userForm.homeLocation,
+            isAdmin: userForm.isAdmin
+          };
+        }
+      } else if (activeTab === 2) {
+        const siteForm = currentItem as SiteForm;
+        url = API_ENDPOINTS.SITE_POB(siteForm.siteName);
         dataToSend = {
-          userEmail: userForm.userEmail,
-          ...(userForm.password && { password: userForm.password }),
-          firstName: userForm.firstName,
-          lastName: userForm.lastName,
-          homeLocation: userForm.homeLocation,
-          isAdmin: userForm.isAdmin
-        };
-      } else {
-        // Use register endpoint for new users
-        url = API_ENDPOINTS.REGISTER; // Make sure this points to /api/users/register
-        const userForm = currentItem as UserForm;
-        dataToSend = {
-          userEmail: userForm.userEmail,
-          password: userForm.password,
-          firstName: userForm.firstName,
-          lastName: userForm.lastName,
-          homeLocation: userForm.homeLocation,
-          isAdmin: userForm.isAdmin
+          currentPOB: Number(siteForm.currentPOB)
         };
       }
-    } else if (activeTab === 2) {
-      const siteForm = currentItem as SiteForm;
-      url = API_ENDPOINTS.SITE_POB(siteForm.siteName);
-      dataToSend = {
-        currentPOB: Number(siteForm.currentPOB)
+
+      const id = currentItem?._id;
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       };
-    }
 
-    const id = currentItem?._id;
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
+      if (activeTab === 1 && !isEditing) {
+        // For new user registration, use POST to register endpoint
+        response = await fetch(url!, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(dataToSend),
+        });
+      } else if (isEditing && id && activeTab !== 2) {
+        response = await fetch(`${url}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(dataToSend),
+        });
+      } else if (activeTab === 2) {
+        response = await fetch(url!, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(dataToSend),
+        });
+      } else {
+        response = await fetch(url!, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(dataToSend),
+        });
+      }
 
-    if (activeTab === 1 && !isEditing) {
-      // For new user registration, use POST to register endpoint
-      response = await fetch(url!, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(dataToSend),
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || 'Operation failed');
+      }
+
+      setSnackbar({
+        open: true,
+        message: `Successfully ${isEditing ? 'updated' : 'created'}`,
+        severity: 'success'
       });
-    } else if (isEditing && id && activeTab !== 2) {
-      response = await fetch(`${url}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(dataToSend),
-      });
-    } else if (activeTab === 2) {
-      response = await fetch(url!, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(dataToSend),
-      });
-    } else {
-      response = await fetch(url!, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(dataToSend),
+
+      // Refresh the data
+      const headersForRefresh = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
+      if (activeTab === 0) {
+        const passengersResponse = await fetch(API_ENDPOINTS.PASSENGERS, { headers: headersForRefresh });
+        setPassengers(await passengersResponse.json());
+      } else if (activeTab === 1) {
+        const usersResponse = await fetch(API_ENDPOINTS.USERS, { headers: headersForRefresh });
+        setUsers(await usersResponse.json());
+      } else if (activeTab === 2) {
+        const sitesResponse = await fetch(API_ENDPOINTS.SITES, { headers: headersForRefresh });
+        setSites(await sitesResponse.json());
+      }
+
+      handleCloseDialog();
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : 'Operation failed',
+        severity: 'error'
       });
     }
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || errorData.error || 'Operation failed');
-    }
-
-    setSnackbar({
-      open: true,
-      message: `Successfully ${isEditing ? 'updated' : 'created'}`,
-      severity: 'success'
-    });
-
-    // Refresh the data
-    const headersForRefresh = {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-    
-    if (activeTab === 0) {
-      const passengersResponse = await fetch(API_ENDPOINTS.PASSENGERS, { headers: headersForRefresh });
-      setPassengers(await passengersResponse.json());
-    } else if (activeTab === 1) {
-      const usersResponse = await fetch(API_ENDPOINTS.USERS, { headers: headersForRefresh });
-      setUsers(await usersResponse.json());
-    } else if (activeTab === 2) {
-      const sitesResponse = await fetch(API_ENDPOINTS.SITES, { headers: headersForRefresh });
-      setSites(await sitesResponse.json());
-    }
-
-    handleCloseDialog();
-  } catch (err) {
-    setSnackbar({
-      open: true,
-      message: err instanceof Error ? err.message : 'Operation failed',
-      severity: 'error'
-    });
-  }
-};
+  };
 
   const handleDelete = async (id: string) => {
     try {
@@ -414,13 +414,13 @@ const handleSave = async () => {
   const filterUsers = (user: User) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
-    const email = user.userEmail?.toLowerCase() || '';
+    const userName = user.userName?.toLowerCase() || ''; // Changed from email to userName
     const firstName = user.firstName?.toLowerCase() || '';
     const lastName = user.lastName?.toLowerCase() || '';
     const homeLocation = user.homeLocation?.toLowerCase() || '';
     const adminStatus = user.isAdmin ? 'admin' : '';
     return (
-      email.includes(term) ||
+      userName.includes(term) || // Changed from email to userName
       firstName.includes(term) ||
       lastName.includes(term) ||
       homeLocation.includes(term) ||
@@ -462,7 +462,7 @@ const handleSave = async () => {
             <DashboardIcon />
           </IconButton>
           <Typography variant="subtitle1">
-            {user?.userEmail}
+            {user?.userName} {/* Changed from userEmail to userName */}
           </Typography>
           <Button variant="text" onClick={logout} color="inherit" size="small"
             sx={{ 
@@ -573,14 +573,14 @@ const handleSave = async () => {
             ) : activeTab === 1 ? (
               <>
                 <TextField
-                  name="userEmail"
-                  label="Email"
-                  value={(currentItem as UserForm)?.userEmail || ''}
+                  name="userName" // Changed from userEmail to userName
+                  label="Username" // Changed from "Email"
+                  value={(currentItem as UserForm)?.userName || ''} // Changed from userEmail to userName
                   onChange={handleInputChange}
                   fullWidth
-                  type="email"
                   required
-                  disabled={isEditing} // Can't change email when editing
+                  disabled={isEditing} // Can't change username when editing
+                  helperText="Letters, numbers, and hyphens only"
                 />
                 
                 {/* Password fields - always show for new users, optional for editing */}
