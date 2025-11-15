@@ -203,7 +203,9 @@ const calculatePOBAfterUpdate = (
 const HeliPage = () => {
   const { logout, user } = useAuth();
   const isAdmin = user?.isAdmin || false;
-  const [currentLocation, setCurrentLocation] = useState('NSC');
+  
+  // Set initial location to user's homeLocation, fallback to 'NSC'
+  const [currentLocation, setCurrentLocation] = useState(user?.homeLocation || 'NSC');
   const [passengers, setPassengers] = useState<Passenger[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
@@ -222,6 +224,13 @@ const HeliPage = () => {
   const navigate = useNavigate();
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Update location when user data loads or changes
+  useEffect(() => {
+    if (user?.homeLocation) {
+      setCurrentLocation(user.homeLocation);
+    }
+  }, [user?.homeLocation]);
 
   const isToday = (date: Date) => {
     return format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');

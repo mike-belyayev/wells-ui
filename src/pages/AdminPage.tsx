@@ -43,7 +43,7 @@ interface Passenger {
 
 interface User {
   _id: string;
-  userName: string; // Changed from userEmail to userName
+  userName: string;
   firstName: string;
   lastName: string;
   homeLocation: string;
@@ -68,7 +68,7 @@ interface PassengerForm {
 
 interface UserForm {
   _id: string;
-  userName: string; // Changed from userEmail to userName
+  userName: string;
   password: string;
   confirmPassword: string;
   firstName: string;
@@ -83,6 +83,9 @@ interface SiteForm {
   currentPOB: number;
   maximumPOB: number;
 }
+
+// Define the available locations
+const LOCATIONS = ['NTM', 'Ogle', 'NSC', 'NDT', 'NBD', 'STC'];
 
 const AdminPage = () => {
   const { user, logout } = useAuth();
@@ -170,12 +173,12 @@ const AdminPage = () => {
     } else if (activeTab === 1) {
       setCurrentItem({
         _id: '',
-        userName: '', // Changed from userEmail to userName
+        userName: '',
         password: '',
         confirmPassword: '',
         firstName: '',
         lastName: '',
-        homeLocation: '',
+        homeLocation: 'NSC', // Default to NSC
         isAdmin: false
       });
     } else if (activeTab === 2) {
@@ -229,7 +232,7 @@ const AdminPage = () => {
           url = API_ENDPOINTS.USER_BY_ID((currentItem as UserForm)._id);
           const userForm = currentItem as UserForm;
           dataToSend = {
-            userName: userForm.userName, // Changed from userEmail to userName
+            userName: userForm.userName,
             ...(userForm.password && { password: userForm.password }),
             firstName: userForm.firstName,
             lastName: userForm.lastName,
@@ -241,7 +244,7 @@ const AdminPage = () => {
           url = API_ENDPOINTS.REGISTER;
           const userForm = currentItem as UserForm;
           dataToSend = {
-            userName: userForm.userName, // Changed from userEmail to userName
+            userName: userForm.userName,
             password: userForm.password,
             firstName: userForm.firstName,
             lastName: userForm.lastName,
@@ -414,13 +417,13 @@ const AdminPage = () => {
   const filterUsers = (user: User) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
-    const userName = user.userName?.toLowerCase() || ''; // Changed from email to userName
+    const userName = user.userName?.toLowerCase() || '';
     const firstName = user.firstName?.toLowerCase() || '';
     const lastName = user.lastName?.toLowerCase() || '';
     const homeLocation = user.homeLocation?.toLowerCase() || '';
     const adminStatus = user.isAdmin ? 'admin' : '';
     return (
-      userName.includes(term) || // Changed from email to userName
+      userName.includes(term) ||
       firstName.includes(term) ||
       lastName.includes(term) ||
       homeLocation.includes(term) ||
@@ -462,7 +465,7 @@ const AdminPage = () => {
             <DashboardIcon />
           </IconButton>
           <Typography variant="subtitle1">
-            {user?.userName} {/* Changed from userEmail to userName */}
+            {user?.userName}
           </Typography>
           <Button variant="text" onClick={logout} color="inherit" size="small"
             sx={{ 
@@ -573,13 +576,13 @@ const AdminPage = () => {
             ) : activeTab === 1 ? (
               <>
                 <TextField
-                  name="userName" // Changed from userEmail to userName
-                  label="Username" // Changed from "Email"
-                  value={(currentItem as UserForm)?.userName || ''} // Changed from userEmail to userName
+                  name="userName"
+                  label="Username"
+                  value={(currentItem as UserForm)?.userName || ''}
                   onChange={handleInputChange}
                   fullWidth
                   required
-                  disabled={isEditing} // Can't change username when editing
+                  disabled={isEditing}
                   helperText="Letters, numbers, and hyphens only"
                 />
                 
@@ -629,14 +632,24 @@ const AdminPage = () => {
                   fullWidth
                   required
                 />
+                
+                {/* Updated: Changed from TextField to Select dropdown for homeLocation */}
                 <TextField
                   name="homeLocation"
                   label="Home Location"
                   value={(currentItem as UserForm)?.homeLocation || ''}
                   onChange={handleInputChange}
+                  select
                   fullWidth
                   required
-                />
+                >
+                  {LOCATIONS.map((location) => (
+                    <MenuItem key={location} value={location}>
+                      {location}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                
                 <TextField
                   name="isAdmin"
                   label="Is Admin"
