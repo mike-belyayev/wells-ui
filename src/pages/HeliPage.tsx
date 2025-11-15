@@ -41,7 +41,7 @@ interface DayData {
   incoming: Trip[];
   outgoing: Trip[];
   pob: number;
-  updateInfo?: string; // Add this line
+  updateInfo?: string;
 }
 
 // Helper function to get passenger count from a trip
@@ -51,9 +51,6 @@ const getPassengerCount = (trip: Trip): number => {
     : 1;
 };
 
-// Calculate POB for a specific day based on site data and trips
-// Calculate POB for a specific day based on site data and trips
-// Calculate POB for a specific day with update history
 // Calculate POB for a specific day with update history
 const calculatePOB = (
   date: Date, 
@@ -111,23 +108,20 @@ const calculatePOB = (
 const calculatePOBBeforeUpdate = (
   targetDate: string,
   updateDate: string,
-  pobAtUpdateStart: number, // POB at the START of update day (before any trips)
+  pobAtUpdateStart: number,
   currentLocation: string,
   allTrips: Trip[]
 ): { pob: number; updateInfo?: string } => {
-  // Get trips between target date and update date (inclusive of target date, exclusive of update date's trips)
   const relevantTrips = allTrips
     .filter(trip => 
       (trip.toDestination === currentLocation || trip.fromOrigin === currentLocation) &&
       trip.tripDate >= targetDate &&
       trip.tripDate < updateDate
     )
-    .sort((a, b) => new Date(b.tripDate).getTime() - new Date(a.tripDate).getTime()); // Reverse chronological
+    .sort((a, b) => new Date(b.tripDate).getTime() - new Date(a.tripDate).getTime());
 
-  // Start with the POB at the BEGINNING of the update day (before any trips that day)
   let currentPOB = pobAtUpdateStart;
 
-  // Process trips in reverse chronological order (from day before update backwards to target date)
   const tripsByDate: { [date: string]: Trip[] } = {};
   relevantTrips.forEach(trip => {
     if (!tripsByDate[trip.tripDate]) {
@@ -136,22 +130,18 @@ const calculatePOBBeforeUpdate = (
     tripsByDate[trip.tripDate].push(trip);
   });
 
-  // Process dates in reverse chronological order
   const sortedDates = Object.keys(tripsByDate).sort().reverse();
   
   for (const tripDate of sortedDates) {
     const daysTrips = tripsByDate[tripDate];
     
-    // Calculate net change for this day and reverse it (since we're going backwards in time)
     let dailyNetChange = 0;
     daysTrips.forEach(trip => {
       const passengerCount = getPassengerCount(trip);
       
       if (trip.toDestination === currentLocation) {
-        // Incoming trip - when going backwards, subtract what was added
         dailyNetChange -= passengerCount;
       } else if (trip.fromOrigin === currentLocation) {
-        // Outgoing trip - when going backwards, add what was subtracted
         dailyNetChange += passengerCount;
       }
     });
@@ -166,11 +156,10 @@ const calculatePOBBeforeUpdate = (
 const calculatePOBAfterUpdate = (
   targetDate: string,
   updateDate: string,
-  pobAtUpdateStart: number, // POB at the START of update day
+  pobAtUpdateStart: number,
   currentLocation: string,
   allTrips: Trip[]
 ): { pob: number; updateInfo?: string } => {
-  // Get trips on and after update date up to target date
   const relevantTrips = allTrips
     .filter(trip => 
       (trip.toDestination === currentLocation || trip.fromOrigin === currentLocation) &&
@@ -179,10 +168,8 @@ const calculatePOBAfterUpdate = (
     )
     .sort((a, b) => new Date(a.tripDate).getTime() - new Date(b.tripDate).getTime());
 
-  // Start with the POB at the BEGINNING of the update day
   let currentPOB = pobAtUpdateStart;
 
-  // Group trips by date
   const tripsByDate: { [date: string]: Trip[] } = {};
   relevantTrips.forEach(trip => {
     if (!tripsByDate[trip.tripDate]) {
@@ -191,13 +178,11 @@ const calculatePOBAfterUpdate = (
     tripsByDate[trip.tripDate].push(trip);
   });
 
-  // Process dates in chronological order
   const sortedDates = Object.keys(tripsByDate).sort();
   
   for (const tripDate of sortedDates) {
     const daysTrips = tripsByDate[tripDate];
     
-    // Calculate net change for this day
     let dailyNetChange = 0;
     daysTrips.forEach(trip => {
       const passengerCount = getPassengerCount(trip);
@@ -255,10 +240,15 @@ const HeliPage = () => {
       setLoading(true);
       setError(null);
       
+      const headers = {
+        'Authorization': `Bearer ${user?.token}`,
+        'Content-Type': 'application/json'
+      };
+      
       const [passengersRes, tripsRes, sitesRes] = await Promise.all([
-        fetch(API_ENDPOINTS.PASSENGERS),
-        fetch(API_ENDPOINTS.TRIPS),
-        fetch(API_ENDPOINTS.SITES)
+        fetch(API_ENDPOINTS.PASSENGERS, { headers }),
+        fetch(API_ENDPOINTS.TRIPS, { headers }),
+        fetch(API_ENDPOINTS.SITES, { headers })
       ]);
       
       if (!passengersRes.ok) throw new Error('Failed to fetch passengers');
@@ -278,7 +268,7 @@ const HeliPage = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.token]);
 
   // Auto-refresh implementation
   useEffect(() => {
@@ -315,49 +305,48 @@ const HeliPage = () => {
     };
   }, [fetchData]);
 
-// Updated POB status function
-const getPOBStatus = (currentPOB: number, maximumPOB: number): 'normal' | 'warning' | 'critical' => {
-  if (currentPOB === 0) return 'normal'; // 0 POB is normal
-  
-  const percentage = (currentPOB / maximumPOB) * 100;
-  if (currentPOB > maximumPOB) return 'critical'; // Over max = bright red background, white text
-  if (percentage >= 95) return 'warning'; // 95% or above = yellow background, orange text
-  return 'normal'; // Below 95% = light green background, dark green text
-};
-
-const generateWeeks = useCallback(() => {
-  return [-1, 0, 1].map(relativeOffset => {
-    const weekStart = startOfWeek(addWeeks(new Date(), weekOffset + relativeOffset));
-    const weekEnd = endOfWeek(weekStart);
-    const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  // Updated POB status function
+  const getPOBStatus = (currentPOB: number, maximumPOB: number): 'normal' | 'warning' | 'critical' => {
+    if (currentPOB === 0) return 'normal';
     
-    return days.map(date => {
-      const dateStr = format(date, 'yyyy-MM-dd');
-      const relevantTrips = trips.filter(trip => trip.tripDate === dateStr);
-      
-      const sortByConfirmed = (a: Trip, b: Trip) => {
-        if (a.confirmed && !b.confirmed) return -1;
-        if (!a.confirmed && b.confirmed) return 1;
-        return 0;
-      };
+    const percentage = (currentPOB / maximumPOB) * 100;
+    if (currentPOB > maximumPOB) return 'critical';
+    if (percentage >= 95) return 'warning';
+    return 'normal';
+  };
 
-      // Use the new POB calculation that returns both pob and updateInfo
-      const pobResult = calculatePOB(date, currentLocation, trips, sites);
+  const generateWeeks = useCallback(() => {
+    return [-1, 0, 1].map(relativeOffset => {
+      const weekStart = startOfWeek(addWeeks(new Date(), weekOffset + relativeOffset));
+      const weekEnd = endOfWeek(weekStart);
+      const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
       
-      return {
-        date,
-        incoming: relevantTrips
-          .filter(trip => trip.toDestination === currentLocation)
-          .sort(sortByConfirmed),
-        outgoing: relevantTrips
-          .filter(trip => trip.fromOrigin === currentLocation)
-          .sort(sortByConfirmed),
-        pob: pobResult.pob,
-        updateInfo: pobResult.updateInfo
-      };
+      return days.map(date => {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const relevantTrips = trips.filter(trip => trip.tripDate === dateStr);
+        
+        const sortByConfirmed = (a: Trip, b: Trip) => {
+          if (a.confirmed && !b.confirmed) return -1;
+          if (!a.confirmed && b.confirmed) return 1;
+          return 0;
+        };
+
+        const pobResult = calculatePOB(date, currentLocation, trips, sites);
+        
+        return {
+          date,
+          incoming: relevantTrips
+            .filter(trip => trip.toDestination === currentLocation)
+            .sort(sortByConfirmed),
+          outgoing: relevantTrips
+            .filter(trip => trip.fromOrigin === currentLocation)
+            .sort(sortByConfirmed),
+          pob: pobResult.pob,
+          updateInfo: pobResult.updateInfo
+        };
+      });
     });
-  });
-}, [trips, currentLocation, weekOffset, sites]);
+  }, [trips, currentLocation, weekOffset, sites]);
 
   useEffect(() => {
     const generatedWeeks = generateWeeks();
@@ -672,130 +661,130 @@ const generateWeeks = useCallback(() => {
                   <div className="outgoing-label" style={{ minHeight: `${outgoingHeight}rem` }}>OUT</div>
                 </div>
                 
-{week.map((day, dayIndex) => {
-  const site = sites.find(s => s.siteName === currentLocation);
-  const maximumPOB = site?.maximumPOB || 200;
-  const pobStatus = getPOBStatus(day.pob, maximumPOB);
-  const isTodayDate = isToday(day.date);
-  
-  return (
-    <div 
-      key={dayIndex} 
-      className="day-column" // Remove 'today' class from column
-      style={{
-        borderRight: dayIndex < 6 ? '1px solid #ddd' : 'none'
-      }}
-    >
-      <div className={`date-header ${isTodayDate ? 'today' : ''}`}>
-        {format(day.date, 'MMM d')}
-      </div>
-      
-      <div className="passenger-lists">
-        <div 
-          className="incoming-section"
-          style={{ minHeight: `${incomingHeight}rem` }}
-          onDragOver={(e) => isAdmin && handleDragOver(e, day.date, 'incoming')}
-          onDragLeave={handleDragLeave}
-          onDrop={(e) => isAdmin && handleDrop(e, day.date, 'incoming')}
-        >
-          <div className="passenger-cards-container">
-            {day.incoming.map((trip, i) => (
-              <div 
-                key={i}
-                onClick={() => isAdmin && setEditingTrip(trip)}
-                className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
-                draggable={isAdmin}
-                onDragStart={() => isAdmin && handleDragStart(trip, 'incoming')}
-              >
-                <PassengerCard
-                  firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                  lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                  jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                  fromOrigin={trip.fromOrigin}
-                  toDestination={trip.toDestination}
-                  type='incoming'
-                  confirmed={trip.confirmed}
-                  numberOfPassengers={trip.numberOfPassengers}
-                />
-              </div>
-            ))}
-          </div>
-          {isAdmin && (
-            <button
-              onClick={() => {
-                setSelectedCellDate(day.date);
-                setModalOpen(true);
-                setTripType('incoming');
-              }}
-              className="add-button"
-              title="Add incoming passenger"
-            >
-              +
-            </button>
-          )}
-        </div>
-        
-        <div 
-          className="outgoing-section"
-          style={{ minHeight: `${outgoingHeight}rem` }}
-          onDragOver={(e) => isAdmin && handleDragOver(e, day.date, 'outgoing')}
-          onDragLeave={handleDragLeave}
-          onDrop={(e) => isAdmin && handleDrop(e, day.date, 'outgoing')}
-        >
-          <div className="passenger-cards-container">
-            {day.outgoing.map((trip, i) => (
-              <div 
-                key={i}
-                onClick={() => isAdmin && setEditingTrip(trip)}
-                className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
-                draggable={isAdmin}
-                onDragStart={() => isAdmin && handleDragStart(trip, 'outgoing')}
-              >
-                <PassengerCard
-                  firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                  lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                  jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                  fromOrigin={trip.fromOrigin}
-                  toDestination={trip.toDestination}
-                  type='outgoing'
-                  confirmed={trip.confirmed}
-                  numberOfPassengers={trip.numberOfPassengers}
-                />
-              </div>
-            ))}
-          </div>
-          {isAdmin && (
-            <button
-              onClick={() => {
-                setSelectedCellDate(day.date);
-                setModalOpen(true);
-                setTripType('outgoing');
-              }}
-              className="add-button"
-              title="Add outgoing passenger"
-            >
-              +
-            </button>
-          )}
-        </div>
-      </div>
-      
-<div className={`pob-footer ${pobStatus}`}>
-  POB: {day.pob}
-  {day.updateInfo && (
-    <span style={{ 
-      fontSize: '0.6rem', 
-      marginLeft: '4px',
-      opacity: 0.8,
-      fontStyle: 'italic'
-    }}>
-      ({day.updateInfo})
-    </span>
-  )}
-</div>
-    </div>
-  );
-})}
+                {week.map((day, dayIndex) => {
+                  const site = sites.find(s => s.siteName === currentLocation);
+                  const maximumPOB = site?.maximumPOB || 200;
+                  const pobStatus = getPOBStatus(day.pob, maximumPOB);
+                  const isTodayDate = isToday(day.date);
+                  
+                  return (
+                    <div 
+                      key={dayIndex} 
+                      className="day-column"
+                      style={{
+                        borderRight: dayIndex < 6 ? '1px solid #ddd' : 'none'
+                      }}
+                    >
+                      <div className={`date-header ${isTodayDate ? 'today' : ''}`}>
+                        {format(day.date, 'MMM d')}
+                      </div>
+                      
+                      <div className="passenger-lists">
+                        <div 
+                          className="incoming-section"
+                          style={{ minHeight: `${incomingHeight}rem` }}
+                          onDragOver={(e) => isAdmin && handleDragOver(e, day.date, 'incoming')}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => isAdmin && handleDrop(e, day.date, 'incoming')}
+                        >
+                          <div className="passenger-cards-container">
+                            {day.incoming.map((trip, i) => (
+                              <div 
+                                key={i}
+                                onClick={() => isAdmin && setEditingTrip(trip)}
+                                className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
+                                draggable={isAdmin}
+                                onDragStart={() => isAdmin && handleDragStart(trip, 'incoming')}
+                              >
+                                <PassengerCard
+                                  firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                                  lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                                  jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                                  fromOrigin={trip.fromOrigin}
+                                  toDestination={trip.toDestination}
+                                  type='incoming'
+                                  confirmed={trip.confirmed}
+                                  numberOfPassengers={trip.numberOfPassengers}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          {isAdmin && (
+                            <button
+                              onClick={() => {
+                                setSelectedCellDate(day.date);
+                                setModalOpen(true);
+                                setTripType('incoming');
+                              }}
+                              className="add-button"
+                              title="Add incoming passenger"
+                            >
+                              +
+                            </button>
+                          )}
+                        </div>
+                        
+                        <div 
+                          className="outgoing-section"
+                          style={{ minHeight: `${outgoingHeight}rem` }}
+                          onDragOver={(e) => isAdmin && handleDragOver(e, day.date, 'outgoing')}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => isAdmin && handleDrop(e, day.date, 'outgoing')}
+                        >
+                          <div className="passenger-cards-container">
+                            {day.outgoing.map((trip, i) => (
+                              <div 
+                                key={i}
+                                onClick={() => isAdmin && setEditingTrip(trip)}
+                                className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
+                                draggable={isAdmin}
+                                onDragStart={() => isAdmin && handleDragStart(trip, 'outgoing')}
+                              >
+                                <PassengerCard
+                                  firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                                  lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                                  jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                                  fromOrigin={trip.fromOrigin}
+                                  toDestination={trip.toDestination}
+                                  type='outgoing'
+                                  confirmed={trip.confirmed}
+                                  numberOfPassengers={trip.numberOfPassengers}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          {isAdmin && (
+                            <button
+                              onClick={() => {
+                                setSelectedCellDate(day.date);
+                                setModalOpen(true);
+                                setTripType('outgoing');
+                              }}
+                              className="add-button"
+                              title="Add outgoing passenger"
+                            >
+                              +
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className={`pob-footer ${pobStatus}`}>
+                        POB: {day.pob}
+                        {day.updateInfo && (
+                          <span style={{ 
+                            fontSize: '0.6rem', 
+                            marginLeft: '4px',
+                            opacity: 0.8,
+                            fontStyle: 'italic'
+                          }}>
+                            ({day.updateInfo})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             );
           })
