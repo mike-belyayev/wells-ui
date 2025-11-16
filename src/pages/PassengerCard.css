@@ -8,20 +8,33 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 2.2rem; /* Increased height to accommodate second line */
-  max-height: 2.2rem;
+  height: 1.8rem;
+  max-height: 1.8rem;
   width: 100%;
   box-sizing: border-box;
 }
 
-.passenger-info {
+.passenger-content {
   flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  padding-right: 10px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.passenger-count {
+  font-size: 0.7rem;
+  opacity: 0.9;
+  font-weight: 600;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 1px 4px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .passenger-name {
@@ -30,20 +43,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 1px; /* Reduced margin for tighter spacing */
-  line-height: 1.1;
-}
-
-.passenger-count {
-  font-size: 0.7rem;
-  opacity: 0.9;
-  font-weight: 600;
-  margin-left: 4px;
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: 1px 4px;
-  border-radius: 3px;
-  display: inline-flex;
-  align-items: center;
+  flex-shrink: 0;
 }
 
 .passenger-job {
@@ -52,10 +52,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-style: italic; /* Cursive style */
-  font-family: 'Brush Script MT', cursive, Arial, sans-serif; /* Fallback fonts */
-  line-height: 1;
-  margin-top: 1px;
+  font-style: italic;
+  font-family: 'Brush Script MT', cursive, Arial, sans-serif;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .passenger-route {
@@ -64,6 +64,7 @@
   gap: 5px;
   font-size: 0.7rem;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .route-location {

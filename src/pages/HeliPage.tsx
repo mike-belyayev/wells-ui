@@ -219,7 +219,6 @@ const HeliPage = () => {
   const [weekOffset, setWeekOffset] = useState(1);
   const [draggedTrip, setDraggedTrip] = useState<Trip | null>(null);
   const [dragType, setDragType] = useState<'incoming' | 'outgoing' | null>(null);
-  const [sectionHeights, setSectionHeights] = useState<{maxIncoming: number, maxOutgoing: number}[]>([]);
 
   const navigate = useNavigate();
 
@@ -234,14 +233,6 @@ const HeliPage = () => {
 
   const isToday = (date: Date) => {
     return format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-  };
-
-  const calculateMaxCardsPerWeek = (weeksData: DayData[][]) => {
-    return weeksData.map(week => {
-      const maxIncoming = Math.max(...week.map(day => day.incoming.length));
-      const maxOutgoing = Math.max(...week.map(day => day.outgoing.length));
-      return { maxIncoming, maxOutgoing };
-    });
   };
 
   const fetchData = useCallback(async () => {
@@ -360,9 +351,6 @@ const HeliPage = () => {
   useEffect(() => {
     const generatedWeeks = generateWeeks();
     setWeeksData(generatedWeeks);
-    if (generatedWeeks.length > 0) {
-      setSectionHeights(calculateMaxCardsPerWeek(generatedWeeks));
-    }
   }, [generateWeeks]);
 
   const getPassengerById = (passengerId: string): Passenger | undefined => {
@@ -659,144 +647,137 @@ const HeliPage = () => {
       
       <div className="week-container">
         {weeksData.length > 0 ? (
-          weeksData.map((week, weekIndex) => {
-            const incomingHeight = sectionHeights[weekIndex]?.maxIncoming * 1.5 + 3;
-            const outgoingHeight = sectionHeights[weekIndex]?.maxOutgoing * 1.5 + 3;
-
-            return (
-              <div key={weekIndex} className="week-row">
-                <div className="row-header">
-                  <div className="incoming-label" style={{ minHeight: `${incomingHeight}rem` }}>IN</div>
-                  <div className="outgoing-label" style={{ minHeight: `${outgoingHeight}rem` }}>OUT</div>
-                </div>
+          weeksData.map((week, weekIndex) => (
+            <div key={weekIndex} className="week-row">
+              <div className="row-header">
+                <div className="incoming-label">IN</div>
+                <div className="outgoing-label">OUT</div>
+              </div>
+              
+              {week.map((day, dayIndex) => {
+                const site = sites.find(s => s.siteName === currentLocation);
+                const maximumPOB = site?.maximumPOB || 200;
+                const pobStatus = getPOBStatus(day.pob, maximumPOB);
+                const isTodayDate = isToday(day.date);
                 
-                {week.map((day, dayIndex) => {
-                  const site = sites.find(s => s.siteName === currentLocation);
-                  const maximumPOB = site?.maximumPOB || 200;
-                  const pobStatus = getPOBStatus(day.pob, maximumPOB);
-                  const isTodayDate = isToday(day.date);
-                  
-                  return (
-                    <div 
-                      key={dayIndex} 
-                      className="day-column"
-                      style={{
-                        borderRight: dayIndex < 6 ? '1px solid #ddd' : 'none'
-                      }}
-                    >
-                      <div className={`date-header ${isTodayDate ? 'today' : ''}`}>
-                        {format(day.date, 'MMM d')}
+                return (
+                  <div 
+                    key={dayIndex} 
+                    className="day-column"
+                    style={{
+                      borderRight: dayIndex < 6 ? '1px solid #ddd' : 'none'
+                    }}
+                  >
+                    <div className={`date-header ${isTodayDate ? 'today' : ''}`}>
+                      {format(day.date, 'MMM d')}
+                    </div>
+                    
+                    <div className="passenger-lists">
+                      <div 
+                        className="incoming-section"
+                        onDragOver={(e) => isAdmin && handleDragOver(e, day.date, 'incoming')}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => isAdmin && handleDrop(e, day.date, 'incoming')}
+                      >
+                        <div className="passenger-cards-container">
+                          {day.incoming.map((trip, i) => (
+                            <div 
+                              key={i}
+                              onClick={() => isAdmin && setEditingTrip(trip)}
+                              className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
+                              draggable={isAdmin}
+                              onDragStart={() => isAdmin && handleDragStart(trip, 'incoming')}
+                            >
+                              <PassengerCard
+                                firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                                lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                                jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                                fromOrigin={trip.fromOrigin}
+                                toDestination={trip.toDestination}
+                                type='incoming'
+                                confirmed={trip.confirmed}
+                                numberOfPassengers={trip.numberOfPassengers}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setSelectedCellDate(day.date);
+                              setModalOpen(true);
+                              setTripType('incoming');
+                            }}
+                            className="add-button"
+                            title="Add incoming passenger"
+                          >
+                            +
+                          </button>
+                        )}
                       </div>
                       
-                      <div className="passenger-lists">
-                        <div 
-                          className="incoming-section"
-                          style={{ minHeight: `${incomingHeight}rem` }}
-                          onDragOver={(e) => isAdmin && handleDragOver(e, day.date, 'incoming')}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => isAdmin && handleDrop(e, day.date, 'incoming')}
-                        >
-                          <div className="passenger-cards-container">
-                            {day.incoming.map((trip, i) => (
-                              <div 
-                                key={i}
-                                onClick={() => isAdmin && setEditingTrip(trip)}
-                                className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
-                                draggable={isAdmin}
-                                onDragStart={() => isAdmin && handleDragStart(trip, 'incoming')}
-                              >
-                                <PassengerCard
-                                  firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                                  lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                                  jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                                  fromOrigin={trip.fromOrigin}
-                                  toDestination={trip.toDestination}
-                                  type='incoming'
-                                  confirmed={trip.confirmed}
-                                  numberOfPassengers={trip.numberOfPassengers}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                          {isAdmin && (
-                            <button
-                              onClick={() => {
-                                setSelectedCellDate(day.date);
-                                setModalOpen(true);
-                                setTripType('incoming');
-                              }}
-                              className="add-button"
-                              title="Add incoming passenger"
+                      <div 
+                        className="outgoing-section"
+                        onDragOver={(e) => isAdmin && handleDragOver(e, day.date, 'outgoing')}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => isAdmin && handleDrop(e, day.date, 'outgoing')}
+                      >
+                        <div className="passenger-cards-container">
+                          {day.outgoing.map((trip, i) => (
+                            <div 
+                              key={i}
+                              onClick={() => isAdmin && setEditingTrip(trip)}
+                              className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
+                              draggable={isAdmin}
+                              onDragStart={() => isAdmin && handleDragStart(trip, 'outgoing')}
                             >
-                              +
-                            </button>
-                          )}
+                              <PassengerCard
+                                firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                                lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                                jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                                fromOrigin={trip.fromOrigin}
+                                toDestination={trip.toDestination}
+                                type='outgoing'
+                                confirmed={trip.confirmed}
+                                numberOfPassengers={trip.numberOfPassengers}
+                              />
+                            </div>
+                          ))}
                         </div>
-                        
-                        <div 
-                          className="outgoing-section"
-                          style={{ minHeight: `${outgoingHeight}rem` }}
-                          onDragOver={(e) => isAdmin && handleDragOver(e, day.date, 'outgoing')}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => isAdmin && handleDrop(e, day.date, 'outgoing')}
-                        >
-                          <div className="passenger-cards-container">
-                            {day.outgoing.map((trip, i) => (
-                              <div 
-                                key={i}
-                                onClick={() => isAdmin && setEditingTrip(trip)}
-                                className={`passenger-card-container ${!isAdmin ? 'readonly' : ''}`}
-                                draggable={isAdmin}
-                                onDragStart={() => isAdmin && handleDragStart(trip, 'outgoing')}
-                              >
-                                <PassengerCard
-                                  firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                                  lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                                  jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                                  fromOrigin={trip.fromOrigin}
-                                  toDestination={trip.toDestination}
-                                  type='outgoing'
-                                  confirmed={trip.confirmed}
-                                  numberOfPassengers={trip.numberOfPassengers}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                          {isAdmin && (
-                            <button
-                              onClick={() => {
-                                setSelectedCellDate(day.date);
-                                setModalOpen(true);
-                                setTripType('outgoing');
-                              }}
-                              className="add-button"
-                              title="Add outgoing passenger"
-                            >
-                              +
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className={`pob-footer ${pobStatus}`}>
-                        POB: {day.pob}
-                        {day.updateInfo && (
-                          <span style={{ 
-                            fontSize: '0.6rem', 
-                            marginLeft: '4px',
-                            opacity: 0.8,
-                            fontStyle: 'italic'
-                          }}>
-                            ({day.updateInfo})
-                          </span>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setSelectedCellDate(day.date);
+                              setModalOpen(true);
+                              setTripType('outgoing');
+                            }}
+                            className="add-button"
+                            title="Add outgoing passenger"
+                          >
+                            +
+                          </button>
                         )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            );
-          })
+                    
+                    <div className={`pob-footer ${pobStatus}`}>
+                      POB: {day.pob}
+                      {day.updateInfo && (
+                        <span style={{ 
+                          fontSize: '0.6rem', 
+                          marginLeft: '4px',
+                          opacity: 0.8,
+                          fontStyle: 'italic'
+                        }}>
+                          ({day.updateInfo})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))
         ) : (
           <div className="no-data-message">
             No trip data available for the selected location and date range
