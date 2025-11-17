@@ -22,6 +22,7 @@ export default function PassengerCard({
   numberOfPassengers
 }: PassengerCardProps) {
   const fullName = `${firstName} ${lastName}`;
+  const location = type === 'incoming' ? fromOrigin : toDestination;
   
   // Build tooltip content including number of passengers if defined
   const tooltipContent = `
@@ -36,20 +37,25 @@ export default function PassengerCard({
   return (
     <div className={`passenger-card ${type} ${confirmed ? 'confirmed' : 'unconfirmed'}`}>
       <div className="passenger-content" data-tooltip={tooltipContent.trim()}>
-        {numberOfPassengers && numberOfPassengers > 0 && (
-          <span className="passenger-count">[{numberOfPassengers}] </span>
-        )}
-        <span className="passenger-name">{firstName} {lastName}</span>
-        {jobRole && (
-          <span className="passenger-job">
-            {jobRole.length > 20 ? `${jobRole.substring(0, 20)}...` : jobRole}
-          </span>
-        )}
-        <span className="passenger-route">
-          {type !== 'outgoing' && <span className="route-location">{fromOrigin}</span>}
-          <span className={`route-arrow ${type}`}>→</span>
-          {type !== 'incoming' && <span className="route-location">{toDestination}</span>}
-        </span>
+        <div className="passenger-main-info">
+          {numberOfPassengers && numberOfPassengers > 0 && (
+            <span className="passenger-count">[{numberOfPassengers}]</span>
+          )}
+          <div className="passenger-text">
+            <div className="passenger-name">
+              {fullName}
+            </div>
+            {jobRole && (
+              <div className="passenger-job">
+                {jobRole}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="passenger-direction">
+          <span className="direction-location">{location}</span>
+          <span className="direction-arrow">{type === 'incoming' ? '←' : '→'}</span>
+        </div>
       </div>
     </div>
   );

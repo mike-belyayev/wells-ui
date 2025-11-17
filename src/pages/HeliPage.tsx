@@ -216,7 +216,7 @@ const HeliPage = () => {
   const [selectedCellDate, setSelectedCellDate] = useState<Date>(new Date());
   const [tripType, setTripType] = useState<'incoming' | 'outgoing'>('outgoing');
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
-  const [weekOffset, setWeekOffset] = useState(0); // Changed to show current week + next week
+  const [weekOffset, setWeekOffset] = useState(0);
   const [draggedTrip, setDraggedTrip] = useState<Trip | null>(null);
   const [dragType, setDragType] = useState<'incoming' | 'outgoing' | null>(null);
 
@@ -638,7 +638,6 @@ const HeliPage = () => {
       </AppBar>
       
       <div className="days-header">
-        <div className="corner-cell"></div>
         {daysOfWeek.map((day, index) => (
           <div key={index} className="day-cell">
             {day}
@@ -650,11 +649,6 @@ const HeliPage = () => {
         {weeksData.length > 0 ? (
           weeksData.map((week, weekIndex) => (
             <div key={weekIndex} className="week-row">
-              <div className="row-header">
-                <div className="incoming-label">IN</div>
-                <div className="outgoing-label">OUT</div>
-              </div>
-              
               {week.map((day, dayIndex) => {
                 const site = sites.find(s => s.siteName === currentLocation);
                 const maximumPOB = site?.maximumPOB || 200;
@@ -665,9 +659,6 @@ const HeliPage = () => {
                   <div 
                     key={dayIndex} 
                     className="day-column"
-                    style={{
-                      borderRight: dayIndex < 6 ? '1px solid #ddd' : 'none'
-                    }}
                   >
                     <div className={`date-header ${isTodayDate ? 'today' : ''}`}>
                       {format(day.date, 'MMM d')}

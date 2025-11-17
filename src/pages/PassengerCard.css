@@ -1,89 +1,110 @@
 .passenger-card {
-  margin-bottom: 2px;
-  font-size: 0.75rem;
-  padding: 5px;
-  border-radius: 4px;
+  margin-bottom: 1px;
+  font-size: 0.7rem;
+  padding: 3px 5px;
+  border-radius: 3px;
   color: white;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 1.8rem;
-  max-height: 1.8rem;
+  height: 2rem;
+  max-height: 2rem;
   width: 100%;
   box-sizing: border-box;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.passenger-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 3px rgba(0,0,0,0.15);
 }
 
 .passenger-content {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  justify-content: space-between;
+  gap: 5px;
+  min-width: 0;
+  height: 100%;
+}
+
+.passenger-main-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
   min-width: 0;
 }
 
 .passenger-count {
-  font-size: 0.7rem;
-  opacity: 0.9;
-  font-weight: 600;
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: 1px 4px;
-  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  background-color: rgba(255, 255, 255, 0.25);
+  padding: 1px 3px;
+  border-radius: 2px;
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
+  height: 1.2rem;
+}
+
+.passenger-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .passenger-name {
-  font-weight: bold;
-  font-size: 0.8rem;
+  font-weight: 600;
+  font-size: 0.75rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 0;
+  line-height: 1.1;
+  margin-bottom: 0;
 }
 
 .passenger-job {
-  font-size: 0.65rem;
-  opacity: 0.85;
+  font-size: 0.6rem;
+  opacity: 0.9;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-style: italic;
   font-family: 'Brush Script MT', cursive, Arial, sans-serif;
-  flex-shrink: 1;
-  min-width: 0;
+  line-height: 1;
+  margin-top: 0;
 }
 
-.passenger-route {
+.passenger-direction {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.7rem;
+  gap: 3px;
   flex-shrink: 0;
-  margin-left: auto;
+  margin-left: 5px;
+  font-size: 0.65rem;
 }
 
-.route-location {
+.direction-location {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 80px;
+  max-width: 50px;
+  font-weight: 500;
+  text-align: right;
 }
 
-.route-arrow {
+.direction-arrow {
+  font-size: 0.75rem;
+  font-weight: 900;
   flex-shrink: 0;
-}
-
-.route-arrow.incoming {
-  color: #a5d6a7;
-}
-
-.route-arrow.outgoing {
-  color: #90caf9;
+  width: 0.8rem;
+  text-align: center;
 }
 
 /* Color Themes */
@@ -101,4 +122,60 @@
 
 .passenger-card.outgoing.unconfirmed {
   background-color: rgba(21, 101, 192, 0.6);
+}
+
+/* Tooltip styles */
+.passenger-content[data-tooltip] {
+  position: relative;
+}
+
+.passenger-content[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: pre-wrap;
+  max-width: 200px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* Compact layout for very small screens */
+@media (max-width: 768px) {
+  .passenger-card {
+    height: 1.8rem;
+    max-height: 1.8rem;
+    padding: 2px 4px;
+    font-size: 0.65rem;
+  }
+  
+  .passenger-name {
+    font-size: 0.7rem;
+  }
+  
+  .passenger-job {
+    font-size: 0.55rem;
+  }
+  
+  .passenger-count {
+    font-size: 0.6rem;
+    padding: 0 2px;
+    height: 1rem;
+  }
+  
+  .direction-location {
+    font-size: 0.6rem;
+    max-width: 40px;
+  }
+  
+  .direction-arrow {
+    font-size: 0.7rem;
+    width: 0.7rem;
+  }
 }
