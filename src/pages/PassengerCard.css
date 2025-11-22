@@ -1,19 +1,19 @@
 .passenger-card {
-  margin-bottom: 1px;
-  font-size: 0.7rem;
-  padding: 3px 5px;
   border-radius: 3px;
   color: white;
   box-shadow: 0 1px 1px rgba(0,0,0,0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 2rem;
   max-height: 2rem;
   width: 100%;
   box-sizing: border-box;
   cursor: pointer;
   transition: all 0.2s ease;
+  height: var(--card-height);
+  padding: var(--card-padding);
+  font-size: var(--compact-font-size);
+  margin-bottom: var(--spacing-xs);
 }
 
 .passenger-card:hover {
@@ -61,7 +61,7 @@
 
 .passenger-name {
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: calc(var(--compact-font-size) + 0.05rem);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -70,7 +70,7 @@
 }
 
 .passenger-job {
-  font-size: 0.6rem;
+  font-size: calc(var(--compact-font-size) - 0.05rem);
   opacity: 0.9;
   white-space: nowrap;
   overflow: hidden;

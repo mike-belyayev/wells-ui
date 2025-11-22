@@ -112,19 +112,19 @@
 .week-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  min-height: 300px;
+  min-height: clamp(180px, 220px + (100vw - 1920px) * 0.1, 280px);
   height: 100%;
   border-bottom: 1px solid #ddd;
 }
 
 /* Day column grid with heavier vertical borders */
 .day-column {
+  min-height: clamp(200px, 250px + (100vw - 1920px) * 0.1, 300px);
   display: grid;
   grid-template-rows: auto 1fr auto;
   border-right: 2px solid #b0b0b0;
   background-color: white;
   position: relative;
-  min-height: 300px;
   height: 100%;
   min-width: 0;
 }
@@ -360,6 +360,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.date-header,
+.pob-footer {
+  height: clamp(1.2rem, 1.5rem + (100vw - 1920px) * 0.02, 1.8rem);
+  font-size: var(--compact-font-size);
+  padding: var(--spacing-xs);
 }
 
 /* Week row hover effect for better visual separation */
