@@ -33,7 +33,7 @@ interface AddTripModalProps {
   selectedDate: Date;
   tripType: 'incoming' | 'outgoing';
   currentLocation: string;
-  userHomeBase: string; // Add this prop for user's home base
+  userHomeBase: string;
   onSubmit: (tripData: {
     passengerId: string;
     fromOrigin: string;
@@ -65,10 +65,10 @@ export default function AddTripModal({
 }: AddTripModalProps) {
   const [passengerSearch, setPassengerSearch] = useState('');
   const [selectedPassenger, setSelectedPassenger] = useState<Passenger | null>(null);
-  const [fromOrigin, setFromOrigin] = useState('Ogle'); // Default to Ogle
-  const [toDestination, setToDestination] = useState(userHomeBase); // Default to user's home base
+  const [fromOrigin, setFromOrigin] = useState('Ogle');
+  const [toDestination, setToDestination] = useState(userHomeBase);
   const [tripDate, setTripDate] = useState<Date | null>(normalizeDate(selectedDate));
-  const [confirmed, setConfirmed] = useState(true); // Default to checked
+  const [confirmed, setConfirmed] = useState(true);
   const [numberOfPassengers, setNumberOfPassengers] = useState<number | ''>('');
   const [showAddPassenger, setShowAddPassenger] = useState(false);
   const [newPassenger, setNewPassenger] = useState({
@@ -83,15 +83,17 @@ export default function AddTripModal({
   });
 
   useEffect(() => {
-    setTripDate(normalizeDate(selectedDate));
-    setFromOrigin('Ogle'); // Always default to Ogle
-    setToDestination(userHomeBase); // Always default to user's home base
-    setConfirmed(true); // Always default to checked
-    setNumberOfPassengers('');
-    setShowAddPassenger(false);
-    setNewPassenger({ firstName: '', lastName: '', jobRole: '' });
-    setSelectedPassenger(null);
-    setPassengerSearch('');
+    if (isOpen) {
+      setTripDate(normalizeDate(selectedDate));
+      setFromOrigin('Ogle');
+      setToDestination(userHomeBase);
+      setConfirmed(true);
+      setNumberOfPassengers('');
+      setShowAddPassenger(false);
+      setNewPassenger({ firstName: '', lastName: '', jobRole: '' });
+      setSelectedPassenger(null);
+      setPassengerSearch('');
+    }
   }, [selectedDate, tripType, currentLocation, isOpen, userHomeBase]);
 
   // Function to swap origin and destination
@@ -150,7 +152,15 @@ export default function AddTripModal({
     };
 
     onSubmit(tripData);
-    handleClose();
+    
+    // Clear only the passenger field and keep modal open
+    setSelectedPassenger(null);
+    setPassengerSearch('');
+    setSnackbar({
+      open: true,
+      message: 'Trip added successfully',
+      severity: 'success'
+    });
   };
 
   // Handle number input changes
@@ -177,20 +187,21 @@ export default function AddTripModal({
     }));
   };
 
-  // Improved passenger search - only show matches for the full search term
+  // Improved passenger search - search in first name, last name, and job role
   const filteredPassengers = passengers.filter(passenger => {
     const searchLower = passengerSearch.toLowerCase().trim();
     if (!searchLower) return false;
     
-    const fullName = `${passenger.firstName} ${passenger.lastName}`.toLowerCase();
+    const firstName = passenger.firstName.toLowerCase();
+    const lastName = passenger.lastName.toLowerCase();
     const jobRole = passenger.jobRole.toLowerCase();
+    const fullName = `${firstName} ${lastName}`;
     
-    // Split search into words and check if all words match either name or job role
-    const searchWords = searchLower.split(/\s+/);
-    
-    return searchWords.every(word => 
-      fullName.includes(word) || jobRole.includes(word)
-    );
+    // Check if search term appears in any of the fields
+    return firstName.includes(searchLower) || 
+           lastName.includes(searchLower) || 
+           jobRole.includes(searchLower) ||
+           fullName.includes(searchLower);
   });
 
   if (!isOpen) return null;
@@ -233,7 +244,7 @@ export default function AddTripModal({
                           label="Search Passenger" 
                           required
                           helperText="Search by name or job role"
-                          sx={{ flex: 1, minWidth: 0 }} // Take all available space
+                          sx={{ flex: 1, minWidth: 0 }}
                         />
                       )}
                       renderOption={(props, option) => (
@@ -429,7 +440,7 @@ export default function AddTripModal({
 
             <DialogActions sx={{ mt: 2 }}>
               <Button onClick={handleClose} variant="outlined">
-                Cancel
+                Close
               </Button>
               <Button
                 type="submit"
@@ -450,7 +461,7 @@ export default function AddTripModal({
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
       >
         <Alert

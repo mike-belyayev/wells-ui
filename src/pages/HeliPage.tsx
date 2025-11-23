@@ -387,38 +387,40 @@ const HeliPage = () => {
     }
   };
 
-  const handleAddTrip = async (tripData: {
-    passengerId: string;
-    fromOrigin: string;
-    toDestination: string;
-    tripDate: string;
-    confirmed: boolean;
-    numberOfPassengers?: number;
-  }) => {
-    if (!isAdmin) return;
-    
-    try {
-      const response = await fetch(API_ENDPOINTS.TRIPS, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.token}`
-        },
-        body: JSON.stringify(tripData),
-      });
+const handleAddTrip = async (tripData: {
+  passengerId: string;
+  fromOrigin: string;
+  toDestination: string;
+  tripDate: string;
+  confirmed: boolean;
+  numberOfPassengers?: number;
+}) => {
+  if (!isAdmin) return;
+  
+  try {
+    const response = await fetch(API_ENDPOINTS.TRIPS, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user?.token}`
+      },
+      body: JSON.stringify(tripData),
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add trip');
-      }
-
-      const newTrip = await response.json();
-      setTrips(prev => [...prev, newTrip]);
-      setModalOpen(false);
-    } catch (error) {
-      console.error('Error adding trip:', error);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to add trip');
     }
-  };
+
+    const newTrip = await response.json();
+    setTrips(prev => [...prev, newTrip]);
+    
+    // Don't close the modal here - let AddTripModal handle it
+    // setModalOpen(false); // REMOVE THIS LINE
+  } catch (error) {
+    console.error('Error adding trip:', error);
+  }
+};
 
   const handleUpdateTrip = async (updatedTrip: Trip) => {
     if (!isAdmin) return;
