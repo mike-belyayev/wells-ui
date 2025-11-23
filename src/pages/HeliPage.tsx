@@ -358,11 +358,42 @@ const HeliPage = () => {
     return passengers.find(p => p._id === passengerId);
   };
 
+  // Add this function to handle adding new passengers
+  const handleAddPassenger = async (passengerData: { firstName: string; lastName: string; jobRole: string }) => {
+    try {
+      const response = await fetch(API_ENDPOINTS.PASSENGERS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: JSON.stringify(passengerData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add passenger');
+      }
+
+      const newPassenger = await response.json();
+      
+      // Update the passengers list
+      setPassengers(prev => [...prev, newPassenger]);
+      
+      return newPassenger;
+    } catch (error) {
+      console.error('Error adding passenger:', error);
+      throw error;
+    }
+  };
+
   const handleAddTrip = async (tripData: {
     passengerId: string;
     fromOrigin: string;
     toDestination: string;
     tripDate: string;
+    confirmed: boolean;
+    numberOfPassengers?: number;
   }) => {
     if (!isAdmin) return;
     
@@ -376,10 +407,13 @@ const HeliPage = () => {
         body: JSON.stringify(tripData),
       });
 
-      if (!response.ok) throw new Error('Failed to add trip');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add trip');
+      }
 
       const newTrip = await response.json();
-      setTrips([...trips, newTrip]);
+      setTrips(prev => [...prev, newTrip]);
       setModalOpen(false);
     } catch (error) {
       console.error('Error adding trip:', error);
@@ -788,7 +822,9 @@ const HeliPage = () => {
             selectedDate={selectedCellDate}
             tripType={tripType}
             currentLocation={currentLocation}
+            userHomeBase={user?.homeLocation || 'NSC'}
             onSubmit={handleAddTrip}
+            onAddPassenger={handleAddPassenger}
           />
           <EditTripModal
             isOpen={editingTrip !== null}
