@@ -21,13 +21,15 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
-  Chip
+  Chip,
+  Alert as MuiAlert
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
   Person,
   People,
-  LocationOn
+  LocationOn,
+  Close
 } from '@mui/icons-material';
 import PassengersTab from '../components/admin/PassengersTab';
 import UsersTab from '../components/admin/UsersTab';
@@ -109,6 +111,7 @@ const AdminPage = () => {
     severity: 'success' as 'success' | 'error'
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [duplicateWarning, setDuplicateWarning] = useState<string>('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -152,6 +155,65 @@ const AdminPage = () => {
     fetchData();
   }, [activeTab, token]);
 
+  // Check for duplicate passengers when form fields change
+  useEffect(() => {
+    if (activeTab === 0 && openDialog && currentItem && !isEditing) {
+      const passengerForm = currentItem as PassengerForm;
+      const { firstName, lastName } = passengerForm;
+      
+      if (firstName.trim() || lastName.trim()) {
+        const duplicates = passengers.filter(p => 
+          p.firstName.toLowerCase().includes(firstName.toLowerCase()) &&
+          p.lastName.toLowerCase().includes(lastName.toLowerCase())
+        );
+        
+        if (duplicates.length > 0) {
+          if (firstName && lastName) {
+            // Exact match found
+            const exactMatch = duplicates.find(p => 
+              p.firstName.toLowerCase() === firstName.toLowerCase() && 
+              p.lastName.toLowerCase() === lastName.toLowerCase()
+            );
+            
+            if (exactMatch) {
+              setDuplicateWarning(`⚠️ Exact match found: "${exactMatch.firstName} ${exactMatch.lastName}" works as "${exactMatch.jobRole}"`);
+            } else {
+              // Partial matches
+              const firstNameMatches = passengers.filter(p => 
+                p.firstName.toLowerCase().includes(firstName.toLowerCase())
+              ).length;
+              
+              const lastNameMatches = passengers.filter(p => 
+                p.lastName.toLowerCase().includes(lastName.toLowerCase())
+              ).length;
+              
+              setDuplicateWarning(
+                `🔍 ${firstNameMatches} passenger(s) with similar first name, ${lastNameMatches} with similar last name. ` +
+                `${duplicates.length} potential match(es) found.`
+              );
+            }
+          } else if (firstName) {
+            const firstNameMatches = passengers.filter(p => 
+              p.firstName.toLowerCase().includes(firstName.toLowerCase())
+            ).length;
+            setDuplicateWarning(`🔍 ${firstNameMatches} passenger(s) with similar first name`);
+          } else if (lastName) {
+            const lastNameMatches = passengers.filter(p => 
+              p.lastName.toLowerCase().includes(lastName.toLowerCase())
+            ).length;
+            setDuplicateWarning(`🔍 ${lastNameMatches} passenger(s) with similar last name`);
+          }
+        } else {
+          setDuplicateWarning('');
+        }
+      } else {
+        setDuplicateWarning('');
+      }
+    } else {
+      setDuplicateWarning('');
+    }
+  }, [currentItem, passengers, activeTab, openDialog, isEditing]);
+
   const handleOpenDialog = (item: Passenger | User | Site | null = null) => {
     if (item && activeTab === 1) {
       setCurrentItem({
@@ -191,11 +253,13 @@ const AdminPage = () => {
     }
     setIsEditing(!!item);
     setOpenDialog(true);
+    setDuplicateWarning('');
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setCurrentItem(null);
+    setDuplicateWarning('');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -312,16 +376,31 @@ const AdminPage = () => {
       
       if (activeTab === 0) {
         const passengersResponse = await fetch(API_ENDPOINTS.PASSENGERS, { headers: headersForRefresh });
-        setPassengers(await passengersResponse.json());
+        const updatedPassengers = await passengersResponse.json();
+        setPassengers(updatedPassengers);
+        
+        // Clear form fields but keep dialog open for adding more passengers
+        if (!isEditing) {
+          setCurrentItem({
+            _id: '',
+            firstName: '',
+            lastName: '',
+            jobRole: ''
+          });
+          setDuplicateWarning('');
+        } else {
+          handleCloseDialog();
+        }
       } else if (activeTab === 1) {
         const usersResponse = await fetch(API_ENDPOINTS.USERS, { headers: headersForRefresh });
         setUsers(await usersResponse.json());
+        handleCloseDialog();
       } else if (activeTab === 2) {
         const sitesResponse = await fetch(API_ENDPOINTS.SITES, { headers: headersForRefresh });
         setSites(await sitesResponse.json());
+        handleCloseDialog();
       }
 
-      handleCloseDialog();
     } catch (err) {
       setSnackbar({
         open: true,
@@ -541,8 +620,11 @@ const AdminPage = () => {
       </Container>
 
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {isEditing ? 'Edit' : 'Add New'} {activeTab === 0 ? 'Passenger' : activeTab === 2 ? 'Site' : 'User'}
+          <IconButton onClick={handleCloseDialog} size="small">
+            <Close />
+          </IconButton>
         </DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
@@ -572,6 +654,16 @@ const AdminPage = () => {
                   fullWidth
                   required
                 />
+                
+                {/* Duplicate Warning */}
+                {duplicateWarning && (
+                  <MuiAlert 
+                    severity={duplicateWarning.includes('⚠️ Exact match found') ? 'warning' : 'info'}
+                    sx={{ mt: 1 }}
+                  >
+                    {duplicateWarning}
+                  </MuiAlert>
+                )}
               </>
             ) : activeTab === 1 ? (
               <>
@@ -717,9 +809,11 @@ const AdminPage = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={handleCloseDialog}>
+            {isEditing ? 'Cancel' : 'Close'}
+          </Button>
           <Button onClick={handleSave} variant="contained" color="primary">
-            Save
+            {isEditing ? 'Update' : 'Add'} {activeTab === 0 ? 'Passenger' : activeTab === 2 ? 'Site' : 'User'}
           </Button>
         </DialogActions>
       </Dialog>
