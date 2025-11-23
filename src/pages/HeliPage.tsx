@@ -358,34 +358,48 @@ const HeliPage = () => {
     return passengers.find(p => p._id === passengerId);
   };
 
-  // Add this function to handle adding new passengers
-  const handleAddPassenger = async (passengerData: { firstName: string; lastName: string; jobRole: string }) => {
-    try {
-      const response = await fetch(API_ENDPOINTS.PASSENGERS, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.token}`
-        },
-        body: JSON.stringify(passengerData),
-      });
+// In HeliPage.tsx - Update the handleAddPassenger function
+const handleAddPassenger = async (passengerData: { firstName: string; lastName: string; jobRole: string }) => {
+  try {
+    const response = await fetch(API_ENDPOINTS.PASSENGERS, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user?.token}`
+      },
+      body: JSON.stringify(passengerData),
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add passenger');
-      }
-
-      const newPassenger = await response.json();
-      
-      // Update the passengers list
-      setPassengers(prev => [...prev, newPassenger]);
-      
-      return newPassenger;
-    } catch (error) {
-      console.error('Error adding passenger:', error);
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to add passenger');
     }
-  };
+
+    const newPassenger = await response.json();
+    
+    // Force update the passengers list by refetching all passengers
+    // This ensures we have the complete, up-to-date list
+    const passengersResponse = await fetch(API_ENDPOINTS.PASSENGERS, {
+      headers: {
+        'Authorization': `Bearer ${user?.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (passengersResponse.ok) {
+      const allPassengers = await passengersResponse.json();
+      setPassengers(allPassengers);
+    } else {
+      // Fallback: just add the new passenger to the existing list
+      setPassengers(prev => [...prev, newPassenger]);
+    }
+    
+    return newPassenger;
+  } catch (error) {
+    console.error('Error adding passenger:', error);
+    throw error;
+  }
+};
 
 const handleAddTrip = async (tripData: {
   passengerId: string;

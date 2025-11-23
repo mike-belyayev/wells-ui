@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -13,12 +13,15 @@ import {
   Checkbox,
   FormControlLabel,
   Button,
-  Autocomplete,
   Alert,
   Box,
   Typography,
   IconButton,
-  Snackbar
+  Snackbar,
+  List,
+  ListItem,
+  ListItemText,
+  Paper
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -71,6 +74,7 @@ export default function AddTripModal({
   const [confirmed, setConfirmed] = useState(true);
   const [numberOfPassengers, setNumberOfPassengers] = useState<number | ''>('');
   const [showAddPassenger, setShowAddPassenger] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const [newPassenger, setNewPassenger] = useState({
     firstName: '',
     lastName: '',
@@ -82,6 +86,8 @@ export default function AddTripModal({
     severity: 'success' as 'success' | 'error'
   });
 
+  const searchRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (isOpen) {
       setTripDate(normalizeDate(selectedDate));
@@ -90,11 +96,26 @@ export default function AddTripModal({
       setConfirmed(true);
       setNumberOfPassengers('');
       setShowAddPassenger(false);
+      setShowDropdown(false);
       setNewPassenger({ firstName: '', lastName: '', jobRole: '' });
       setSelectedPassenger(null);
       setPassengerSearch('');
     }
   }, [selectedDate, tripType, currentLocation, isOpen, userHomeBase]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Function to swap origin and destination
   const handleSwapLocations = () => {
@@ -156,6 +177,7 @@ export default function AddTripModal({
     // Clear only the passenger field and keep modal open
     setSelectedPassenger(null);
     setPassengerSearch('');
+    setShowDropdown(false);
     setSnackbar({
       open: true,
       message: 'Trip added successfully',
@@ -174,6 +196,7 @@ export default function AddTripModal({
 
   const handleClose = () => {
     setShowAddPassenger(false);
+    setShowDropdown(false);
     setNewPassenger({ firstName: '', lastName: '', jobRole: '' });
     setSelectedPassenger(null);
     setPassengerSearch('');
@@ -187,9 +210,10 @@ export default function AddTripModal({
     }));
   };
 
-  // Improved passenger search - search in first name, last name, and job role
+  // Custom search logic
   const filteredPassengers = passengers.filter(passenger => {
     const searchLower = passengerSearch.toLowerCase().trim();
+    
     if (!searchLower) return false;
     
     const firstName = passenger.firstName.toLowerCase();
@@ -197,12 +221,45 @@ export default function AddTripModal({
     const jobRole = passenger.jobRole.toLowerCase();
     const fullName = `${firstName} ${lastName}`;
     
-    // Check if search term appears in any of the fields
-    return firstName.includes(searchLower) || 
-           lastName.includes(searchLower) || 
-           jobRole.includes(searchLower) ||
-           fullName.includes(searchLower);
+    // Split search into words to handle multiple terms
+    const searchWords = searchLower.split(/\s+/).filter(word => word.length > 0);
+    
+    // If only one search word, check individual fields
+    if (searchWords.length === 1) {
+      const word = searchWords[0];
+      return firstName.includes(word) || 
+             lastName.includes(word) || 
+             jobRole.includes(word) ||
+             fullName.includes(word);
+    }
+    
+    // If multiple search words, require ALL words to match somewhere
+    return searchWords.every(word => 
+      firstName.includes(word) || 
+      lastName.includes(word) || 
+      jobRole.includes(word) ||
+      fullName.includes(word)
+    );
   });
+
+  const handlePassengerSelect = (passenger: Passenger) => {
+    setSelectedPassenger(passenger);
+    setPassengerSearch(`${passenger.firstName} ${passenger.lastName} - ${passenger.jobRole}`);
+    setShowDropdown(false);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassengerSearch(value);
+    setSelectedPassenger(null);
+    setShowDropdown(value.length > 0);
+  };
+
+  const handleSearchFocus = () => {
+    if (passengerSearch.length > 0) {
+      setShowDropdown(true);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -221,78 +278,94 @@ export default function AddTripModal({
             <FormControl fullWidth margin="normal">
               {!showAddPassenger ? (
                 <Box>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', width: '100%' }}>
-                    <Autocomplete
-                      options={filteredPassengers}
-                      getOptionLabel={(option) => `${option.firstName} ${option.lastName} - ${option.jobRole}`}
-                      value={selectedPassenger}
-                      onChange={(_, newValue) => {
-                        setSelectedPassenger(newValue);
-                        if (newValue) {
-                          setPassengerSearch(`${newValue.firstName} ${newValue.lastName} - ${newValue.jobRole}`);
-                        } else {
-                          setPassengerSearch('');
-                        }
-                      }}
-                      inputValue={passengerSearch}
-                      onInputChange={(_, newInputValue) => {
-                        setPassengerSearch(newInputValue);
-                      }}
-                      renderInput={(params) => (
-                        <TextField 
-                          {...params} 
-                          label="Search Passenger" 
-                          required
-                          helperText="Search by name or job role"
-                          sx={{ flex: 1, minWidth: 0 }}
-                        />
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', width: '100%' }} ref={searchRef}>
+                    <Box sx={{ flex: 1, position: 'relative' }}>
+                      <TextField
+                        label="Search Passenger"
+                        value={passengerSearch}
+                        onChange={handleSearchChange}
+                        onFocus={handleSearchFocus}
+                        required
+                        helperText="Search by first name, last name, or job role"
+                        fullWidth
+                        sx={{ minWidth: 0 }}
+                      />
+                      
+                      {/* Custom Dropdown */}
+                      {showDropdown && (
+                        <Paper 
+                          sx={{ 
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            zIndex: 1000,
+                            maxHeight: 200,
+                            overflow: 'auto',
+                            mt: 0.5,
+                            boxShadow: 3
+                          }}
+                        >
+                          <List dense>
+                            {filteredPassengers.length > 0 ? (
+                              filteredPassengers.map((passenger) => (
+                                <ListItem
+                                  key={passenger._id}
+                                  onClick={() => handlePassengerSelect(passenger)}
+                                  sx={{
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                      backgroundColor: 'action.hover'
+                                    }
+                                  }}
+                                >
+                                  <ListItemText
+                                    primary={`${passenger.firstName} ${passenger.lastName}`}
+                                    secondary={passenger.jobRole}
+                                  />
+                                </ListItem>
+                              ))
+                            ) : (
+                              <ListItem>
+                                <ListItemText 
+                                  primary="No passengers found"
+                                  secondary={
+                                    onAddPassenger && passengerSearch ? (
+                                      <Button
+                                        startIcon={<Add />}
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={() => {
+                                          const names = passengerSearch.split(' ');
+                                          setNewPassenger({
+                                            firstName: names[0] || '',
+                                            lastName: names.slice(1).join(' ') || '',
+                                            jobRole: ''
+                                          });
+                                          setShowAddPassenger(true);
+                                          setShowDropdown(false);
+                                        }}
+                                        sx={{ mt: 1 }}
+                                      >
+                                        Add "{passengerSearch}" as new passenger
+                                      </Button>
+                                    ) : null
+                                  }
+                                />
+                              </ListItem>
+                            )}
+                          </List>
+                        </Paper>
                       )}
-                      renderOption={(props, option) => (
-                        <li {...props}>
-                          <Box>
-                            <Typography variant="body1">
-                              {option.firstName} {option.lastName}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {option.jobRole}
-                            </Typography>
-                          </Box>
-                        </li>
-                      )}
-                      noOptionsText={
-                        <Box sx={{ p: 1 }}>
-                          <Typography variant="body2" color="textSecondary" gutterBottom>
-                            {passengerSearch ? 'No passengers found' : 'Start typing to search passengers'}
-                          </Typography>
-                          {onAddPassenger && passengerSearch && (
-                            <Button
-                              startIcon={<Add />}
-                              variant="outlined"
-                              size="small"
-                              onClick={() => {
-                                // Pre-fill the new passenger form with the search text
-                                const searchWithoutJobRole = passengerSearch.split(' - ')[0];
-                                const names = searchWithoutJobRole.split(' ');
-                                setNewPassenger({
-                                  firstName: names[0] || '',
-                                  lastName: names.slice(1).join(' ') || '',
-                                  jobRole: ''
-                                });
-                                setShowAddPassenger(true);
-                              }}
-                              fullWidth
-                            >
-                              Add "{passengerSearch.split(' - ')[0]}" as new passenger
-                            </Button>
-                          )}
-                        </Box>
-                      }
-                      sx={{ flex: 1 }}
-                    />
+                    </Box>
+                    
                     <Button
                       startIcon={<PersonAdd />}
                       variant="outlined"
-                      onClick={() => setShowAddPassenger(true)}
+                      onClick={() => {
+                        setShowAddPassenger(true);
+                        setShowDropdown(false);
+                      }}
                       sx={{ 
                         height: '56px', 
                         minWidth: '140px',
@@ -309,7 +382,10 @@ export default function AddTripModal({
                     <Typography variant="h6">Add New Passenger</Typography>
                     <Button 
                       size="small" 
-                      onClick={() => setShowAddPassenger(false)}
+                      onClick={() => {
+                        setShowAddPassenger(false);
+                        setShowDropdown(false);
+                      }}
                     >
                       Back to Search
                     </Button>
