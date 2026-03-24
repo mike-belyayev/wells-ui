@@ -1,5 +1,4 @@
 import './PassengerCard.css';
-import { isPast, isToday } from 'date-fns';
 
 interface PassengerCardProps {
   firstName: string;
@@ -10,7 +9,7 @@ interface PassengerCardProps {
   type: 'incoming' | 'outgoing';
   confirmed: boolean;
   numberOfPassengers?: number;
-  tripDate?: string; // NEW: Add tripDate to determine if it's past
+  tripDate?: string; // Trip date to determine if it's past
 }
 
 export default function PassengerCard({ 
@@ -22,15 +21,39 @@ export default function PassengerCard({
   type,
   confirmed,
   numberOfPassengers,
-  tripDate // NEW: Trip date to determine past status
+  tripDate
 }: PassengerCardProps) {
   const fullName = `${firstName} ${lastName}`;
   
   // Get the relevant location for display
   const displayLocation = type === 'incoming' ? fromOrigin : toDestination;
   
-  // NEW: Determine if this trip is in the past
-  const isPastTrip = tripDate ? isPast(new Date(tripDate)) && !isToday(new Date(tripDate)) : false;
+  // Helper function to create a local date from a date string or Date object
+  const getLocalDate = (dateInput: string | Date): Date => {
+    let date: Date;
+    if (typeof dateInput === 'string') {
+      // Parse the date string in local timezone
+      const [year, month, day] = dateInput.split('T')[0].split('-').map(Number);
+      date = new Date(year, month - 1, day);
+    } else {
+      date = new Date(dateInput);
+    }
+    // Return date at midnight in local timezone
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  };
+  
+  // Determine if this trip is in the past (yesterday or earlier)
+  // Today's trips should NOT be greyed out
+  const isPastTrip = (() => {
+    if (!tripDate) return false;
+    
+    const tripLocalDate = getLocalDate(tripDate);
+    const today = new Date();
+    const todayLocalDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    // Trip is past if it's before today (yesterday or earlier)
+    return tripLocalDate < todayLocalDate;
+  })();
   
   // Get site abbreviation
   const getSiteAbbreviation = (site: string): string => {
@@ -49,16 +72,16 @@ export default function PassengerCard({
   const siteAbbreviation = getSiteAbbreviation(displayLocation);
   const shouldShowSiteText = siteAbbreviation !== ''; // Only show if not empty (not Ogle)
   
-  // NEW: Determine if this is a group trip
+  // Determine if this is a group trip
   const isGroupTrip = numberOfPassengers && numberOfPassengers > 1;
   
   // Base classes
   const baseClasses = `passenger-card ${type} ${confirmed ? 'confirmed' : 'unconfirmed'}`;
   
-  // NEW: Add past trip class
+  // Add past trip class only for trips from yesterday or earlier
   const pastClass = isPastTrip ? 'past-trip' : '';
   
-  // NEW: Add group trip class
+  // Add group trip class
   const groupClass = isGroupTrip ? 'group-trip' : '';
 
   return (
@@ -83,7 +106,7 @@ export default function PassengerCard({
         </div>
       </div>
       
-      {/* NEW: Site text on right edge - only show if not Ogle */}
+      {/* Site text on right edge - only show if not Ogle */}
       {shouldShowSiteText && (
         <div className="site-text" title={displayLocation}>
           {siteAbbreviation}

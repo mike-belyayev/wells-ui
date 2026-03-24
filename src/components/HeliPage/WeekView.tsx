@@ -48,16 +48,32 @@ const WeekView: React.FC<WeekViewProps> = ({
   const site = sites.find(s => s.siteName === currentLocation);
   const maximumPOB = site?.maximumPOB || 200;
 
+  // Use the original isToday from date-fns to keep today detection correct
+  const isTodayDate = (date: Date): boolean => {
+    return isToday(date);
+  };
+
+  // For past detection, subtract 1 day so that today is not considered past
+  const isPastDate = (date: Date): boolean => {
+    const adjustedDate = new Date(date);
+    adjustedDate.setDate(adjustedDate.getDate() + 1);
+    return isPast(adjustedDate);
+  };
+
   return (
     <div className="week-row">
       {week.map((day, dayIndex) => {
-        const isTodayDate = isToday(day.date);
-        const isPastDay = isPast(day.date) && !isTodayDate;
+        const isToday = isTodayDate(day.date);
+        const isPast = isPastDate(day.date);
+        
+        // Admin can edit any date, non-admin can only edit future dates (not past and not today)
+        const isEditable = isAdmin || (!isPast && !isToday);
+
         const pobStatus = getPOBStatus(day.pob, maximumPOB);
 
         return (
-          <div key={dayIndex} className={`day-column ${isPastDay ? 'past-day' : ''}`}>
-            <div className={`date-header ${isTodayDate ? 'today' : ''}`}>
+          <div key={dayIndex} className={`day-column ${isPast ? 'past-day' : ''}`}>
+            <div className={`date-header ${isToday ? 'today' : ''}`}>
               {format(day.date, 'MMM d')}
             </div>
             
@@ -66,9 +82,9 @@ const WeekView: React.FC<WeekViewProps> = ({
                 {/* Incoming Section */}
                 <div 
                   className="incoming-section"
-                  onDragOver={(e) => isAdmin && e.preventDefault()}
+                  onDragOver={(e) => isEditable && e.preventDefault()}
                   onDrop={(e) => {
-                    if (!isAdmin) return;
+                    if (!isEditable) return;
                     e.preventDefault();
                     onDropMoveDate(day.date, 'incoming');
                   }}
@@ -78,20 +94,20 @@ const WeekView: React.FC<WeekViewProps> = ({
                       <div
                         key={`${trip._id}-${index}`}
                         className={`passenger-card-container ${
-                          !isAdmin ? 'readonly' : ''
+                          !isEditable ? 'readonly' : ''
                         } ${dragOverIndex === index ? 'drag-over' : ''} ${
                           draggedTripId === trip._id ? 'dragging' : ''
                         }`}
-                        draggable={isAdmin && !isPastDay}
-                        onDragStart={() => isAdmin && !isPastDay && onDragStart(trip, 'incoming')}
-                        onDragOver={(e) => isAdmin && !isPastDay && onDragOver(e, index)}
+                        draggable={isEditable}
+                        onDragStart={() => isEditable && onDragStart(trip, 'incoming')}
+                        onDragOver={(e) => isEditable && onDragOver(e, index)}
                         onDragLeave={onDragLeave}
                         onDrop={(e) => {
-                          if (!isAdmin || isPastDay) return;
+                          if (!isEditable) return;
                           e.preventDefault();
                           onDropReorder(trip, 'incoming', index);
                         }}
-                        onClick={() => isAdmin && !isPastDay && onEditTrip(trip)}
+                        onClick={() => isEditable && onEditTrip(trip)}
                       >
                         <PassengerCard
                           firstName={getPassengerById(trip.passengerId)?.firstName || ''}
@@ -107,7 +123,7 @@ const WeekView: React.FC<WeekViewProps> = ({
                       </div>
                     ))}
                   </div>
-                  {isAdmin && !isPastDay && (
+                  {isEditable && (
                     <button
                       onClick={() => onAddTrip(day.date, 'incoming')}
                       className="add-button"
@@ -121,9 +137,9 @@ const WeekView: React.FC<WeekViewProps> = ({
                 {/* Outgoing Section */}
                 <div 
                   className="outgoing-section"
-                  onDragOver={(e) => isAdmin && e.preventDefault()}
+                  onDragOver={(e) => isEditable && e.preventDefault()}
                   onDrop={(e) => {
-                    if (!isAdmin) return;
+                    if (!isEditable) return;
                     e.preventDefault();
                     onDropMoveDate(day.date, 'outgoing');
                   }}
@@ -133,20 +149,20 @@ const WeekView: React.FC<WeekViewProps> = ({
                       <div
                         key={`${trip._id}-${index}`}
                         className={`passenger-card-container ${
-                          !isAdmin ? 'readonly' : ''
+                          !isEditable ? 'readonly' : ''
                         } ${dragOverIndex === index ? 'drag-over' : ''} ${
                           draggedTripId === trip._id ? 'dragging' : ''
                         }`}
-                        draggable={isAdmin && !isPastDay}
-                        onDragStart={() => isAdmin && !isPastDay && onDragStart(trip, 'outgoing')}
-                        onDragOver={(e) => isAdmin && !isPastDay && onDragOver(e, index)}
+                        draggable={isEditable}
+                        onDragStart={() => isEditable && onDragStart(trip, 'outgoing')}
+                        onDragOver={(e) => isEditable && onDragOver(e, index)}
                         onDragLeave={onDragLeave}
                         onDrop={(e) => {
-                          if (!isAdmin || isPastDay) return;
+                          if (!isEditable) return;
                           e.preventDefault();
                           onDropReorder(trip, 'outgoing', index);
                         }}
-                        onClick={() => isAdmin && !isPastDay && onEditTrip(trip)}
+                        onClick={() => isEditable && onEditTrip(trip)}
                       >
                         <PassengerCard
                           firstName={getPassengerById(trip.passengerId)?.firstName || ''}
@@ -162,7 +178,7 @@ const WeekView: React.FC<WeekViewProps> = ({
                       </div>
                     ))}
                   </div>
-                  {isAdmin && !isPastDay && (
+                  {isEditable && (
                     <button
                       onClick={() => onAddTrip(day.date, 'outgoing')}
                       className="add-button"
@@ -175,7 +191,7 @@ const WeekView: React.FC<WeekViewProps> = ({
               </div>
             </div>
             
-            <div className={`pob-footer ${pobStatus} ${isPastDay ? 'past' : ''}`}>
+            <div className={`pob-footer ${pobStatus} ${isPast ? 'past' : ''}`}>
               POB: {day.pob}
               {day.updateInfo && (
                 <span className="pob-update-info">
