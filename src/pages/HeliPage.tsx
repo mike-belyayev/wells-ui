@@ -52,7 +52,9 @@ const HeliPage = () => {
     handleDragOver,
     handleDragLeave,
     handleDropReorder,
-    handleDropMoveDate
+    handleDropMoveDate,
+    handleMoveUp,
+    handleMoveDown
   } = useDragAndDrop(isAdmin, user?.token, currentLocation, trips, setTrips, fetchData);
   
   const navigate = useNavigate();
@@ -326,37 +328,39 @@ const HeliPage = () => {
               size="small"
             />
           </Box>
-{/* Developer Credit Section */}
-<Box sx={{ 
-  display: 'flex', 
-  flexDirection: 'column',
-  gap: 0.5,
-}}>
-  <Typography 
-    variant="caption" 
-    sx={{ 
-      color: '#32cd32',
-      fontSize: '0.65rem',
-      lineHeight: 1.2,
-      fontWeight: 500,
-      letterSpacing: 0.3
-    }}
-  >
-    App developed for Wells Team by:
-  </Typography>
-  <Typography 
-    variant="caption" 
-    sx={{ 
-      color: '#32cd32',
-      fontSize: '0.65rem',
-      lineHeight: 1.2,
-      fontWeight: 500,
-      letterSpacing: 0.3
-    }}
-  >
-    Mike.Belyayev@exxonmobil.com
-  </Typography>
-</Box>
+          
+          {/* Developer Credit Section */}
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            gap: 0.5,
+          }}>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: '#32cd32',
+                fontSize: '0.65rem',
+                lineHeight: 1.2,
+                fontWeight: 500,
+                letterSpacing: 0.3
+              }}
+            >
+              App developed for Wells Team by:
+            </Typography>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: '#32cd32',
+                fontSize: '0.65rem',
+                lineHeight: 1.2,
+                fontWeight: 500,
+                letterSpacing: 0.3
+              }}
+            >
+              Mike.Belyayev@exxonmobil.com
+            </Typography>
+          </Box>
+          
           <Box sx={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -433,6 +437,8 @@ const HeliPage = () => {
               onDragLeave={handleDragLeave}
               onDropReorder={handleDropReorder}
               onDropMoveDate={handleDropMoveDate}
+              onMoveUp={handleMoveUp}
+              onMoveDown={handleMoveDown}
               dragOverIndex={dragOverIndex}
               draggedTripId={draggedTrip?.trip._id}
             />

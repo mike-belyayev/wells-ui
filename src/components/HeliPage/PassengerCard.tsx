@@ -1,3 +1,4 @@
+// src/components/HeliPage/PassengerCard.tsx
 import './PassengerCard.css';
 
 interface PassengerCardProps {
@@ -75,6 +76,12 @@ export default function PassengerCard({
   // Determine if this is a group trip
   const isGroupTrip = numberOfPassengers && numberOfPassengers > 1;
   
+  // Check if this is a TBN passenger - search in name AND job role for "TBN" (case insensitive)
+  const isTBN = (() => {
+    const searchText = `${firstName} ${lastName} ${jobRole}`.toUpperCase();
+    return searchText.includes('TBN');
+  })();
+  
   // Base classes
   const baseClasses = `passenger-card ${type} ${confirmed ? 'confirmed' : 'unconfirmed'}`;
   
@@ -83,10 +90,13 @@ export default function PassengerCard({
   
   // Add group trip class
   const groupClass = isGroupTrip ? 'group-trip' : '';
+  
+  // Add TBN class
+  const tbnClass = isTBN ? 'tbn-passenger-card' : '';
 
   return (
     <div 
-      className={`${baseClasses} ${pastClass} ${groupClass}`}
+      className={`${baseClasses} ${pastClass} ${groupClass} ${tbnClass}`}
     >
       <div className="passenger-content">
         <div className="passenger-main-info">
@@ -94,11 +104,11 @@ export default function PassengerCard({
             <span className="passenger-count">[{numberOfPassengers}]</span>
           )}
           <div className="passenger-text">
-            <div className="passenger-name">
+            <div className={`passenger-name ${isTBN ? 'tbn-name' : ''}`}>
               {fullName}
             </div>
             {jobRole && (
-              <div className="passenger-job">
+              <div className={`passenger-job ${isTBN ? 'tbn-job' : ''}`}>
                 {jobRole}
               </div>
             )}

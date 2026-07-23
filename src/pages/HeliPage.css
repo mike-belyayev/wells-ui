@@ -1,4 +1,4 @@
-/* HeliPage.css - Updated for 10-week view */
+/* HeliPage.css - Updated for 10-week view with TBN highlighting and daily totals */
 .dashboard-container * {
   font-family: Arial, sans-serif;
 }
@@ -198,43 +198,69 @@
   min-height: 0;
 }
 
+/* POB Footer with daily totals */
 .pob-footer {
   text-align: center;
   border-top: 1px solid #eee;
   font-size: 0.75rem;
   background-color: #f8f9fa;
   font-weight: 500;
-  height: 1rem;
+  height: 1.8rem;
   transition: all 0.3s ease;
   flex-shrink: 0;
   position: relative;
   z-index: 2;
   min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
   grid-row: 3;
+}
+
+/* Daily total text styling */
+.daily-total {
+  font-size: 0.65rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.daily-total.incoming-total {
+  color: #2e7d32;
+}
+
+.daily-total.outgoing-total {
+  color: #0d47a1;
+}
+
+.pob-value {
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-align: center;
+  flex: 1;
 }
 
 /* Normal POB - Light green background, dark green text */
 .pob-footer.normal {
   background-color: #e8f5e8 !important;
   color: #2e7d32 !important;
-  font-weight: 600;
 }
 
 /* Warning POB (≥95%) - Yellow background, dark orange text */
 .pob-footer.warning {
   background-color: #ffee8b !important;
   color: #976200 !important;
-  font-weight: 700;
 }
 
 /* Critical POB (>100%) - Bright red background, light red/white text */
 .pob-footer.critical {
   background-color: #d70000 !important;
   color: #ffffff !important;
-  font-weight: 700;
+}
+
+/* Normal POB text color for critical */
+.pob-footer.critical .pob-value {
+  color: #ffffff !important;
 }
 
 .add-button {
@@ -275,10 +301,22 @@
   cursor: grab;
   margin-bottom: 2px;
   flex-shrink: 0;
+  position: relative;
 }
 
 .passenger-card-container.dragging {
   opacity: 0.5;
+}
+
+/* TBN passenger highlighting */
+.passenger-card-container.tbn-passenger .passenger-card {
+  background-color: #ffebee !important;
+  border-left: 3px solid #d32f2f !important;
+}
+
+.passenger-card-container.tbn-passenger .passenger-name {
+  color: #d32f2f !important;
+  font-weight: 700 !important;
 }
 
 .drop-target {
@@ -296,6 +334,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  position: relative;
 }
 
 .passenger-cards-container::-webkit-scrollbar {
@@ -408,4 +447,65 @@
 /* Make sure all grid areas fill available space */
 .weeks-scroll-container > * {
   min-height: 0;
+}
+
+/* Sorting arrows container - hidden by default */
+.sort-arrows {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+/* Show arrows on hover */
+.passenger-card-container:hover .sort-arrows {
+  opacity: 1;
+}
+
+/* Individual arrow buttons */
+.sort-arrow {
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+  min-width: 0 !important;
+  background: rgba(0, 0, 0, 0.6) !important;
+  color: white !important;
+  border-radius: 2px !important;
+  cursor: pointer !important;
+}
+
+.sort-arrow:hover {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+.sort-arrow:active {
+  transform: scale(0.9);
+}
+
+.sort-arrow svg {
+  font-size: 12px !important;
+}
+
+/* Make room for arrows in passenger card */
+.passenger-card {
+  padding-right: 24px !important;
+  position: relative;
+}
+
+/* Empty message styling */
+.empty-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #999;
+  font-size: 0.7rem;
+  font-style: italic;
+  padding: 8px 0;
 }

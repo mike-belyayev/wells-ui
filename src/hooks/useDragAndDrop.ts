@@ -150,6 +150,179 @@ export const useDragAndDrop = (
     }
   }, [isAdmin, userToken, currentLocation, draggedTrip, setTrips]);
 
+  // NEW: Arrow sorting functions
+  const handleMoveUp = useCallback(async (
+    tripId: string,
+    date: string,
+    type: TripType
+  ) => {
+    if (!isAdmin || !userToken) return;
+    
+    try {
+      const sortKey = getSortKey(currentLocation, type);
+      
+      // Get all trips for this date and type
+      const dateTrips = trips.filter(t => 
+        t.tripDate === date &&
+        ((type === 'incoming' && t.toDestination === currentLocation) ||
+         (type === 'outgoing' && t.fromOrigin === currentLocation))
+      );
+      
+      // Sort by sortIndices
+      const sortedTrips = [...dateTrips].sort((a, b) => {
+        const aIndex = a.sortIndices?.[sortKey] ?? 0;
+        const bIndex = b.sortIndices?.[sortKey] ?? 0;
+        return aIndex - bIndex;
+      });
+      
+      const currentIndex = sortedTrips.findIndex(t => t._id === tripId);
+      
+      if (currentIndex <= 0) return; // Already at top
+      
+      // Swap sort indices
+      const tripToMove = sortedTrips[currentIndex];
+      const tripAbove = sortedTrips[currentIndex - 1];
+      
+      const tripToMoveIndex = tripToMove.sortIndices?.[sortKey] ?? 0;
+      const tripAboveIndex = tripAbove.sortIndices?.[sortKey] ?? 0;
+      
+      // Update both trips
+      const updatedTripToMove = {
+        ...tripToMove,
+        sortIndices: {
+          ...tripToMove.sortIndices,
+          [sortKey]: tripAboveIndex
+        }
+      };
+      
+      const updatedTripAbove = {
+        ...tripAbove,
+        sortIndices: {
+          ...tripAbove.sortIndices,
+          [sortKey]: tripToMoveIndex
+        }
+      };
+      
+      // Save to API
+      await fetch(API_ENDPOINTS.TRIP_SORT(tripToMove._id), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ sortIndices: updatedTripToMove.sortIndices }),
+      });
+      
+      await fetch(API_ENDPOINTS.TRIP_SORT(tripAbove._id), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ sortIndices: updatedTripAbove.sortIndices }),
+      });
+      
+      // Update local state
+      setTrips(prevTrips => {
+        return prevTrips.map(t => {
+          if (t._id === tripToMove._id) return updatedTripToMove;
+          if (t._id === tripAbove._id) return updatedTripAbove;
+          return t;
+        });
+      });
+      
+    } catch (error) {
+      console.error('Error moving trip up:', error);
+      await fetchData();
+    }
+  }, [isAdmin, userToken, currentLocation, trips, setTrips, fetchData]);
+
+  const handleMoveDown = useCallback(async (
+    tripId: string,
+    date: string,
+    type: TripType
+  ) => {
+    if (!isAdmin || !userToken) return;
+    
+    try {
+      const sortKey = getSortKey(currentLocation, type);
+      
+      // Get all trips for this date and type
+      const dateTrips = trips.filter(t => 
+        t.tripDate === date &&
+        ((type === 'incoming' && t.toDestination === currentLocation) ||
+         (type === 'outgoing' && t.fromOrigin === currentLocation))
+      );
+      
+      // Sort by sortIndices
+      const sortedTrips = [...dateTrips].sort((a, b) => {
+        const aIndex = a.sortIndices?.[sortKey] ?? 0;
+        const bIndex = b.sortIndices?.[sortKey] ?? 0;
+        return aIndex - bIndex;
+      });
+      
+      const currentIndex = sortedTrips.findIndex(t => t._id === tripId);
+      
+      if (currentIndex >= sortedTrips.length - 1) return; // Already at bottom
+      
+      // Swap sort indices
+      const tripToMove = sortedTrips[currentIndex];
+      const tripBelow = sortedTrips[currentIndex + 1];
+      
+      const tripToMoveIndex = tripToMove.sortIndices?.[sortKey] ?? 0;
+      const tripBelowIndex = tripBelow.sortIndices?.[sortKey] ?? 0;
+      
+      // Update both trips
+      const updatedTripToMove = {
+        ...tripToMove,
+        sortIndices: {
+          ...tripToMove.sortIndices,
+          [sortKey]: tripBelowIndex
+        }
+      };
+      
+      const updatedTripBelow = {
+        ...tripBelow,
+        sortIndices: {
+          ...tripBelow.sortIndices,
+          [sortKey]: tripToMoveIndex
+        }
+      };
+      
+      // Save to API
+      await fetch(API_ENDPOINTS.TRIP_SORT(tripToMove._id), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ sortIndices: updatedTripToMove.sortIndices }),
+      });
+      
+      await fetch(API_ENDPOINTS.TRIP_SORT(tripBelow._id), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ sortIndices: updatedTripBelow.sortIndices }),
+      });
+      
+      // Update local state
+      setTrips(prevTrips => {
+        return prevTrips.map(t => {
+          if (t._id === tripToMove._id) return updatedTripToMove;
+          if (t._id === tripBelow._id) return updatedTripBelow;
+          return t;
+        });
+      });
+      
+    } catch (error) {
+      console.error('Error moving trip down:', error);
+      await fetchData();
+    }
+  }, [isAdmin, userToken, currentLocation, trips, setTrips, fetchData]);
+
   return {
     draggedTrip,
     dragOverIndex,
@@ -159,6 +332,8 @@ export const useDragAndDrop = (
     handleDragLeave,
     handleDragEnd,
     handleDropReorder,
-    handleDropMoveDate
+    handleDropMoveDate,
+    handleMoveUp,    // NEW
+    handleMoveDown   // NEW
   };
 };

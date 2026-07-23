@@ -3,6 +3,9 @@ import React from 'react';
 import { format, isPast, isToday } from 'date-fns';
 import PassengerCard from './PassengerCard';
 import type { DayData, Trip, Site, TripType, Passenger } from '../../types';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { IconButton } from '@mui/material';
 
 interface WeekViewProps {
   week: DayData[];
@@ -17,6 +20,8 @@ interface WeekViewProps {
   onDragLeave: () => void;
   onDropReorder: (trip: Trip, type: TripType, index: number) => void;
   onDropMoveDate: (date: Date, type: TripType) => void;
+  onMoveUp: (tripId: string, date: string, type: TripType) => void;
+  onMoveDown: (tripId: string, date: string, type: TripType) => void;
   dragOverIndex: number | null;
   draggedTripId?: string;
 }
@@ -34,6 +39,8 @@ const WeekView: React.FC<WeekViewProps> = ({
   onDragLeave,
   onDropReorder,
   onDropMoveDate,
+  onMoveUp,
+  onMoveDown,
   dragOverIndex,
   draggedTripId
 }) => {
@@ -60,16 +67,36 @@ const WeekView: React.FC<WeekViewProps> = ({
     return isPast(adjustedDate);
   };
 
+  // Helper to check if passenger is TBN - search in name AND job role
+  const isTBNPassenger = (passengerId: string): boolean => {
+    const passenger = getPassengerById(passengerId);
+    if (!passenger) return false;
+    const searchText = `${passenger.firstName} ${passenger.lastName} ${passenger.jobRole}`.toUpperCase();
+    return searchText.includes('TBN');
+  };
+
   return (
     <div className="week-row">
       {week.map((day, dayIndex) => {
         const isToday = isTodayDate(day.date);
         const isPast = isPastDate(day.date);
+        const dateStr = format(day.date, 'yyyy-MM-dd');
         
         // Admin can edit any date, non-admin can only edit future dates (not past and not today)
         const isEditable = isAdmin || (!isPast && !isToday);
 
         const pobStatus = getPOBStatus(day.pob, maximumPOB);
+
+        // Calculate totals for incoming and outgoing
+        const incomingTotal = day.incoming.reduce(
+          (sum: number, trip: Trip) => sum + (trip.numberOfPassengers || 1),
+          0
+        );
+        
+        const outgoingTotal = day.outgoing.reduce(
+          (sum: number, trip: Trip) => sum + (trip.numberOfPassengers || 1),
+          0
+        );
 
         return (
           <div key={dayIndex} className={`day-column ${isPast ? 'past-day' : ''}`}>
@@ -90,38 +117,67 @@ const WeekView: React.FC<WeekViewProps> = ({
                   }}
                 >
                   <div className="passenger-cards-container">
-                    {day.incoming.map((trip, index) => (
-                      <div
-                        key={`${trip._id}-${index}`}
-                        className={`passenger-card-container ${
-                          !isEditable ? 'readonly' : ''
-                        } ${dragOverIndex === index ? 'drag-over' : ''} ${
-                          draggedTripId === trip._id ? 'dragging' : ''
-                        }`}
-                        draggable={isEditable}
-                        onDragStart={() => isEditable && onDragStart(trip, 'incoming')}
-                        onDragOver={(e) => isEditable && onDragOver(e, index)}
-                        onDragLeave={onDragLeave}
-                        onDrop={(e) => {
-                          if (!isEditable) return;
-                          e.preventDefault();
-                          onDropReorder(trip, 'incoming', index);
-                        }}
-                        onClick={() => isEditable && onEditTrip(trip)}
-                      >
-                        <PassengerCard
-                          firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                          lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                          jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                          fromOrigin={trip.fromOrigin}
-                          toDestination={trip.toDestination}
-                          type="incoming"
-                          confirmed={trip.confirmed}
-                          numberOfPassengers={trip.numberOfPassengers}
-                          tripDate={trip.tripDate}
-                        />
-                      </div>
-                    ))}
+                    {day.incoming.map((trip, index) => {
+                      const isTBN = isTBNPassenger(trip.passengerId);
+                      return (
+                        <div
+                          key={`${trip._id}-${index}`}
+                          className={`passenger-card-container ${
+                            !isEditable ? 'readonly' : ''
+                          } ${dragOverIndex === index ? 'drag-over' : ''} ${
+                            draggedTripId === trip._id ? 'dragging' : ''
+                          } ${isTBN ? 'tbn-passenger' : ''}`}
+                          draggable={isEditable}
+                          onDragStart={() => isEditable && onDragStart(trip, 'incoming')}
+                          onDragOver={(e) => isEditable && onDragOver(e, index)}
+                          onDragLeave={onDragLeave}
+                          onDrop={(e) => {
+                            if (!isEditable) return;
+                            e.preventDefault();
+                            onDropReorder(trip, 'incoming', index);
+                          }}
+                          onClick={() => isEditable && onEditTrip(trip)}
+                        >
+                          <PassengerCard
+                            firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                            lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                            jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                            fromOrigin={trip.fromOrigin}
+                            toDestination={trip.toDestination}
+                            type="incoming"
+                            confirmed={trip.confirmed}
+                            numberOfPassengers={trip.numberOfPassengers}
+                            tripDate={trip.tripDate}
+                          />
+                          
+                          {/* Sorting arrows - only show for admin on editable dates */}
+                          {isEditable && isAdmin && (
+                            <div className="sort-arrows">
+                              <button
+                                className="sort-arrow up-arrow"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onMoveUp(trip._id, dateStr, 'incoming');
+                                }}
+                                title="Move up"
+                              >
+                                ▲
+                              </button>
+                              <button
+                                className="sort-arrow down-arrow"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onMoveDown(trip._id, dateStr, 'incoming');
+                                }}
+                                title="Move down"
+                              >
+                                ▼
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   {isEditable && (
                     <button
@@ -145,38 +201,67 @@ const WeekView: React.FC<WeekViewProps> = ({
                   }}
                 >
                   <div className="passenger-cards-container">
-                    {day.outgoing.map((trip, index) => (
-                      <div
-                        key={`${trip._id}-${index}`}
-                        className={`passenger-card-container ${
-                          !isEditable ? 'readonly' : ''
-                        } ${dragOverIndex === index ? 'drag-over' : ''} ${
-                          draggedTripId === trip._id ? 'dragging' : ''
-                        }`}
-                        draggable={isEditable}
-                        onDragStart={() => isEditable && onDragStart(trip, 'outgoing')}
-                        onDragOver={(e) => isEditable && onDragOver(e, index)}
-                        onDragLeave={onDragLeave}
-                        onDrop={(e) => {
-                          if (!isEditable) return;
-                          e.preventDefault();
-                          onDropReorder(trip, 'outgoing', index);
-                        }}
-                        onClick={() => isEditable && onEditTrip(trip)}
-                      >
-                        <PassengerCard
-                          firstName={getPassengerById(trip.passengerId)?.firstName || ''}
-                          lastName={getPassengerById(trip.passengerId)?.lastName || ''}
-                          jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
-                          fromOrigin={trip.fromOrigin}
-                          toDestination={trip.toDestination}
-                          type="outgoing"
-                          confirmed={trip.confirmed}
-                          numberOfPassengers={trip.numberOfPassengers}
-                          tripDate={trip.tripDate}
-                        />
-                      </div>
-                    ))}
+                    {day.outgoing.map((trip, index) => {
+                      const isTBN = isTBNPassenger(trip.passengerId);
+                      return (
+                        <div
+                          key={`${trip._id}-${index}`}
+                          className={`passenger-card-container ${
+                            !isEditable ? 'readonly' : ''
+                          } ${dragOverIndex === index ? 'drag-over' : ''} ${
+                            draggedTripId === trip._id ? 'dragging' : ''
+                          } ${isTBN ? 'tbn-passenger' : ''}`}
+                          draggable={isEditable}
+                          onDragStart={() => isEditable && onDragStart(trip, 'outgoing')}
+                          onDragOver={(e) => isEditable && onDragOver(e, index)}
+                          onDragLeave={onDragLeave}
+                          onDrop={(e) => {
+                            if (!isEditable) return;
+                            e.preventDefault();
+                            onDropReorder(trip, 'outgoing', index);
+                          }}
+                          onClick={() => isEditable && onEditTrip(trip)}
+                        >
+                          <PassengerCard
+                            firstName={getPassengerById(trip.passengerId)?.firstName || ''}
+                            lastName={getPassengerById(trip.passengerId)?.lastName || ''}
+                            jobRole={getPassengerById(trip.passengerId)?.jobRole || ''}
+                            fromOrigin={trip.fromOrigin}
+                            toDestination={trip.toDestination}
+                            type="outgoing"
+                            confirmed={trip.confirmed}
+                            numberOfPassengers={trip.numberOfPassengers}
+                            tripDate={trip.tripDate}
+                          />
+                          
+                          {/* Sorting arrows - only show for admin on editable dates */}
+                          {isEditable && isAdmin && (
+                            <div className="sort-arrows">
+                              <button
+                                className="sort-arrow up-arrow"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onMoveUp(trip._id, dateStr, 'outgoing');
+                                }}
+                                title="Move up"
+                              >
+                                ▲
+                              </button>
+                              <button
+                                className="sort-arrow down-arrow"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onMoveDown(trip._id, dateStr, 'outgoing');
+                                }}
+                                title="Move down"
+                              >
+                                ▼
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   {isEditable && (
                     <button
@@ -191,13 +276,22 @@ const WeekView: React.FC<WeekViewProps> = ({
               </div>
             </div>
             
+            {/* Updated POB Footer with daily totals */}
             <div className={`pob-footer ${pobStatus} ${isPast ? 'past' : ''}`}>
-              POB: {day.pob}
-              {day.updateInfo && (
-                <span className="pob-update-info">
-                  ({day.updateInfo})
-                </span>
-              )}
+              <span className="daily-total incoming-total">
+                In: {incomingTotal}
+              </span>
+              <span className="pob-value">
+                POB: {day.pob}
+                {day.updateInfo && (
+                  <span className="pob-update-info">
+                    ({day.updateInfo})
+                  </span>
+                )}
+              </span>
+              <span className="daily-total outgoing-total">
+                Out: {outgoingTotal}
+              </span>
             </div>
           </div>
         );

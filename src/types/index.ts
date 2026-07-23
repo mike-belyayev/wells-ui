@@ -15,7 +15,7 @@ export interface Trip {
   confirmed: boolean;
   numberOfPassengers?: number;
   sortIndices?: {
-    [key: string]: number;
+    [key: string]: number; // key format: "location-date-type" e.g., "NSC-2024-01-15-incoming"
   };
 }
 

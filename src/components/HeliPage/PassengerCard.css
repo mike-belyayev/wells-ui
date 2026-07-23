@@ -58,7 +58,74 @@
   background: linear-gradient(135deg, rgba(13, 71, 161, 0.8) 0%, rgba(8, 43, 92, 0.8) 100%);
 }
 
-/* NEW: Site text styling - Right edge, black on white */
+/* TBN Passenger Styling - Red background with red text */
+.passenger-card.tbn-passenger-card,
+.passenger-card.tbn-passenger-card.incoming,
+.passenger-card.tbn-passenger-card.outgoing,
+.passenger-card.tbn-passenger-card.confirmed,
+.passenger-card.tbn-passenger-card.unconfirmed,
+.passenger-card.tbn-passenger-card.group-trip,
+.passenger-card.tbn-passenger-card.group-trip.incoming,
+.passenger-card.tbn-passenger-card.group-trip.outgoing {
+  background-color: #ffebee !important; /* Light red background */
+  color: #d32f2f !important; /* Dark red text */
+  background-image: none !important; /* Remove gradients */
+  border-left: 3px solid #d32f2f !important;
+}
+
+.passenger-card.tbn-passenger-card .passenger-name {
+  color: #d32f2f !important;
+  font-weight: 700 !important;
+}
+
+.passenger-card.tbn-passenger-card .passenger-job {
+  color: #c62828 !important;
+  opacity: 0.8;
+}
+
+.passenger-card.tbn-passenger-card .passenger-count {
+  background-color: rgba(211, 47, 47, 0.2) !important;
+  color: #d32f2f !important;
+  border: 1px solid rgba(211, 47, 47, 0.3) !important;
+}
+
+.passenger-card.tbn-passenger-card .site-text {
+  background-color: #ffcdd2 !important;
+  color: #c62828 !important;
+  border-left: 1px solid rgba(211, 47, 47, 0.2) !important;
+}
+
+/* CRITICAL: Past trip must override TBN */
+.passenger-card.past-trip.tbn-passenger-card,
+.passenger-card.past-trip.tbn-passenger-card.incoming,
+.passenger-card.past-trip.tbn-passenger-card.outgoing,
+.passenger-card.past-trip.tbn-passenger-card.confirmed,
+.passenger-card.past-trip.tbn-passenger-card.unconfirmed,
+.passenger-card.past-trip.tbn-passenger-card.group-trip {
+  background-color: #e0e0e0 !important; /* Light grey background */
+  color: #666 !important; /* Dark grey text */
+  border-left: 3px solid #999 !important;
+  background-image: none !important;
+}
+
+.passenger-card.past-trip.tbn-passenger-card .passenger-name,
+.passenger-card.past-trip.tbn-passenger-card .passenger-job {
+  color: #666 !important;
+}
+
+.passenger-card.past-trip.tbn-passenger-card .passenger-count {
+  background-color: rgba(0, 0, 0, 0.15) !important;
+  color: #666 !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+}
+
+.passenger-card.past-trip.tbn-passenger-card .site-text {
+  background-color: #f0f0f0 !important;
+  color: #888 !important;
+  border-left: 1px solid #ddd !important;
+}
+
+/* Site text styling - Right edge, black on white */
 .site-text {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
@@ -224,4 +291,99 @@
 .passenger-card.group-trip:not(.past-trip) .passenger-name,
 .passenger-card.group-trip:not(.past-trip) .passenger-job {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================ */
+/* SORTING ARROWS - Positioned with negative offset */
+/* ============================================ */
+
+/* Container for arrows - positioned absolutely, no space taken */
+.sort-arrows {
+  position: absolute;
+  right: -20px; /* Negative offset - arrows appear outside the card to the right */
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 20;
+  pointer-events: none; /* Prevent interference with card clicks */
+}
+
+/* Show arrows on hover */
+.passenger-card-container:hover .sort-arrows {
+  opacity: 1;
+  pointer-events: auto; /* Enable clicks when visible */
+}
+
+/* Individual arrow buttons */
+.sort-arrow {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.sort-arrow:hover {
+  background: rgba(0, 0, 0, 0.95);
+  transform: scale(1.1);
+}
+
+.sort-arrow:active {
+  transform: scale(0.9);
+}
+
+.sort-arrow.up-arrow {
+  margin-bottom: 1px;
+}
+
+.sort-arrow.down-arrow {
+  margin-top: 1px;
+}
+
+/* Hide arrows on past trips */
+.passenger-card-container.past-trip .sort-arrows {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Hide arrows on readonly cards */
+.passenger-card-container.readonly .sort-arrows {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Ensure card container has proper overflow to show arrows */
+.passenger-card-container {
+  position: relative;
+  overflow: visible !important; /* Allow arrows to overflow */
+}
+
+/* Make sure the card itself doesn't clip the arrows */
+.passenger-card {
+  overflow: visible !important;
+}
+
+/* Adjust card padding to accommodate arrows when visible */
+.passenger-card-container:not(.readonly):not(.past-trip):hover .passenger-card {
+  padding-right: 22px; /* Make room for arrows on hover */
+}
+
+/* Smooth transition for padding */
+.passenger-card {
+  transition: padding-right 0.2s ease;
 }
