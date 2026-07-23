@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -14,12 +14,19 @@ import {
   FormControlLabel,
   Button,
   CircularProgress,
-  Autocomplete,
-  Alert
+  Alert,
+  Box,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  Paper,
+  IconButton
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { Close } from '@mui/icons-material';
 import type { Passenger, Trip } from '../../types';
 import { API_ENDPOINTS } from '../../config/api';
 
@@ -60,12 +67,14 @@ export default function EditTripModal({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     if (trip) {
       const passenger = passengers.find(p => p._id === trip.passengerId);
       setPassengerSearch(
-        passenger ? `${passenger.firstName} ${passenger.lastName}` : ''
+        passenger ? `${passenger.firstName} ${passenger.lastName} - ${passenger.jobRole}` : ''
       );
       setSelectedPassenger(passenger || null);
       setFromOrigin(trip.fromOrigin);
@@ -88,8 +97,23 @@ export default function EditTripModal({
       setError(null);
       setIsUpdating(false);
       setIsDeleting(false);
+      setShowDropdown(false);
     };
   }, [trip, passengers]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,31 +209,130 @@ export default function EditTripModal({
     }
   };
 
+  // Custom search logic - same as AddTripModal
+  const filteredPassengers = passengers.filter(passenger => {
+    const searchLower = passengerSearch.toLowerCase().trim();
+    
+    if (!searchLower) return false;
+    
+    const firstName = passenger.firstName.toLowerCase();
+    const lastName = passenger.lastName.toLowerCase();
+    const jobRole = passenger.jobRole.toLowerCase();
+    const fullName = `${firstName} ${lastName}`;
+    
+    // Split search into words to handle multiple terms
+    const searchWords = searchLower.split(/\s+/).filter(word => word.length > 0);
+    
+    // If only one search word, check individual fields
+    if (searchWords.length === 1) {
+      const word = searchWords[0];
+      return firstName.includes(word) || 
+             lastName.includes(word) || 
+             jobRole.includes(word) ||
+             fullName.includes(word);
+    }
+    
+    // If multiple search words, require ALL words to match somewhere
+    return searchWords.every(word => 
+      firstName.includes(word) || 
+      lastName.includes(word) || 
+      jobRole.includes(word) ||
+      fullName.includes(word)
+    );
+  });
+
+  const handlePassengerSelect = (passenger: Passenger) => {
+    setSelectedPassenger(passenger);
+    setPassengerSearch(`${passenger.firstName} ${passenger.lastName} - ${passenger.jobRole}`);
+    setShowDropdown(false);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassengerSearch(value);
+    setSelectedPassenger(null);
+    setShowDropdown(value.length > 0);
+  };
+
+  const handleSearchFocus = () => {
+    if (passengerSearch.length > 0) {
+      setShowDropdown(true);
+    }
+  };
+
   if (!isOpen || !trip) return null;
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Trip</DialogTitle>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Edit Trip
+          <IconButton onClick={onClose} size="small">
+            <Close />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
           <form onSubmit={handleUpdate}>
+            {/* Passenger Selection with custom dropdown - same as AddTripModal */}
             <FormControl fullWidth margin="normal">
-              <Autocomplete
-                options={passengers}
-                getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
-                value={selectedPassenger}
-                onChange={(_, newValue) => {
-                  setSelectedPassenger(newValue);
-                  setPassengerSearch(newValue ? `${newValue.firstName} ${newValue.lastName}` : '');
-                }}
-                inputValue={passengerSearch}
-                onInputChange={(_, newInputValue) => {
-                  setPassengerSearch(newInputValue);
-                }}
-                renderInput={(params) => (
-                  <TextField {...params} label="Passenger" required />
+              <Box sx={{ flex: 1, position: 'relative' }} ref={searchRef}>
+                <TextField
+                  label="Search Passenger"
+                  value={passengerSearch}
+                  onChange={handleSearchChange}
+                  onFocus={handleSearchFocus}
+                  required
+                  helperText="Search by first name, last name, or job role"
+                  fullWidth
+                  placeholder="Type to search passengers..."
+                />
+                
+                {/* Custom Dropdown - same as AddTripModal */}
+                {showDropdown && (
+                  <Paper 
+                    sx={{ 
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      zIndex: 1000,
+                      maxHeight: 200,
+                      overflow: 'auto',
+                      mt: 0.5,
+                      boxShadow: 3
+                    }}
+                  >
+                    <List dense>
+                      {filteredPassengers.length > 0 ? (
+                        filteredPassengers.map((passenger) => (
+                          <ListItem
+                            key={passenger._id}
+                            onClick={() => handlePassengerSelect(passenger)}
+                            sx={{
+                              cursor: 'pointer',
+                              '&:hover': {
+                                backgroundColor: 'action.hover'
+                              }
+                            }}
+                          >
+                            <ListItemText
+                              primary={`${passenger.firstName} ${passenger.lastName}`}
+                              secondary={passenger.jobRole}
+                            />
+                          </ListItem>
+                        ))
+                      ) : (
+                        <ListItem>
+                          <ListItemText 
+                            primary="No passengers found"
+                            secondary="Try a different search term"
+                          />
+                        </ListItem>
+                      )}
+                    </List>
+                  </Paper>
                 )}
-              />
+              </Box>
             </FormControl>
 
             <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>

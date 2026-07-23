@@ -3,9 +3,6 @@ import React from 'react';
 import { format, isPast, isToday } from 'date-fns';
 import PassengerCard from './PassengerCard';
 import type { DayData, Trip, Site, TripType, Passenger } from '../../types';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import { IconButton } from '@mui/material';
 
 interface WeekViewProps {
   week: DayData[];
