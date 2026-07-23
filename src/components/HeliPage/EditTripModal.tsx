@@ -29,7 +29,7 @@ import { Close } from '@mui/icons-material';
 import type { Passenger, Trip } from '../../types';
 import { API_ENDPOINTS } from '../../config/api';
 
-// Helper function to normalize dates (fix timezone issues)
+// Helper function to normalize dates (fix timezone issues )
 const normalizeDate = (dateString: string) => {
   // Parse the date in local time but ignore timezone offset
   const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
