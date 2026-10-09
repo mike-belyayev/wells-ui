@@ -6,13 +6,13 @@
    ============================================================ */
 :root {
   /* --- Ogle-related cards (on-shore) --- */
-  --card-incoming-bg:       #52a756;   /* green — for Ogle incoming */
-  --card-outgoing-bg:       #3581d7;   /* blue — for Ogle outgoing */
+  --card-incoming-bg:       #2e7d32;   /* green — for Ogle incoming */
+  --card-outgoing-bg:       #1565c0;   /* blue — for Ogle outgoing */
   --card-ogle-text:         #ffffff;   /* white text on colored cards */
   --card-ogle-subtext:      #e0e0e0;   /* lighter for job role */
 
   /* --- Rig transfer cards (non-Ogle) --- */
-  --card-rig-blue-bg:       #080325;   /* dark blue background */
+  --card-rig-blue-bg:       #1a237e;   /* dark blue background */
   --card-rig-blue-text:     #ffffff;
   --card-rig-blue-subtext:  #c5cae9;
   --card-rig-incoming-border: #0d0f4a;
@@ -22,10 +22,10 @@
   --card-unconfirmed-text:  #d32f2f;
   --card-unconfirmed-border: #d32f2f;
 
-  /* --- Past trips (muted) --- */
-  --card-past-bg:           #e9e9e9;
-  --card-past-text:         #a9a9a9;
-  --card-past-border:       #dcdbdb;
+  /* --- Past trips (very light grey, muted) --- */
+  --card-past-bg:           #eeeeee;
+  --card-past-text:         #8a8a8a;
+  --card-past-border:       #d0d0d0;
 
   /* --- Shared sizing --- */
   --card-height:            2rem;
@@ -159,9 +159,13 @@
   justify-content: center;
 }
 
+/* ============================================================
+   Passenger count badge — NO BACKGROUND, just bold text
+   ============================================================ */
 .passenger-count {
   font-size: 0.65rem;
   font-weight: 800;
+  color: inherit;
   padding: 0.0625rem 0.1875rem;
   border-radius: 0.125rem;
   display: inline-flex;
@@ -170,6 +174,7 @@
   height: 1.2rem;
 }
 
+/* Rig transfer count — color only, no background */
 .passenger-card.rig-transfer:not(.unconfirmed):not(.past-trip) .passenger-count {
   color: #ffffff;
 }
@@ -178,6 +183,7 @@
    Unconfirmed = red alert
    ============================================================ */
 .passenger-card.unconfirmed:not(.past-trip) {
+  background-color: var(--card-unconfirmed-bg) !important;
   color: var(--card-unconfirmed-text) !important;
   background-image: none !important;
   border-left: 3px solid var(--card-unconfirmed-border) !important;
@@ -192,12 +198,13 @@
   font-weight: 700 !important;
 }
 
+/* Unconfirmed count — no background, only text color */
 .passenger-card.unconfirmed:not(.past-trip) .passenger-count {
   color: var(--card-unconfirmed-text) !important;
-  border: 1px solid rgba(211, 47, 47, 0.3) !important;
 }
 
 .passenger-card.unconfirmed:not(.past-trip) .site-text {
+  background-color: #ffcdd2 !important;
   color: #c62828 !important;
   border-left: 1px solid rgba(211, 47, 47, 0.2) !important;
 }
@@ -222,10 +229,9 @@
   opacity: 0.8;
 }
 
+/* TBN count — no background, only text color */
 .passenger-card.tbn-passenger-card:not(.past-trip) .passenger-count {
-  background-color: rgba(211, 47, 47, 0.2) !important;
   color: var(--card-unconfirmed-text) !important;
-  border: 1px solid rgba(211, 47, 47, 0.3) !important;
 }
 
 .passenger-card.tbn-passenger-card:not(.past-trip) .site-text {
@@ -235,7 +241,7 @@
 }
 
 /* ============================================================
-   Past trips — darker grey, override all other rules
+   Past trips — very light grey, override all other rules
    ============================================================ */
 .passenger-card.past-trip,
 .passenger-card.past-trip.incoming,
@@ -258,16 +264,15 @@
   text-shadow: none !important;
 }
 
+/* Past trip count — no background, only muted text color */
 .passenger-card.past-trip .passenger-count {
-  background-color: rgba(0, 0, 0, 0.12) !important;
   color: var(--card-past-text) !important;
-  border: 1px solid rgba(0, 0, 0, 0.2) !important;
 }
 
 .passenger-card.past-trip .site-text {
-  background-color: #e8e8e8 !important;
-  color: #777 !important;
-  border-left: 1px solid #bbb !important;
+  background-color: #f5f5f5 !important;
+  color: #aaa !important;
+  border-left: 1px solid #ddd !important;
 }
 
 /* ============================================================
@@ -309,11 +314,13 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15) inset;
 }
 
+/* Group trip count — no background, just a thin outline + extra bold */
 .passenger-card.group-trip:not(.past-trip) .passenger-count {
   font-weight: 900;
   border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
+/* Rig transfer + group trip count — no background, light outline */
 .passenger-card.rig-transfer.group-trip:not(.past-trip):not(.unconfirmed) .passenger-count {
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.35);
