@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../auth/AuthContext';
 import LocationDropdown from '../components/HeliPage/LocationDropdown';
+import RefreshControls from '../components/HeliPage/RefreshControls';
+import LastUpdated from '../components/HeliPage/LastUpdated';
 import AddTripModal from '../components/HeliPage/AddTripModal';
 import EditTripModal from '../components/HeliPage/EditTripModal';
 import WeekView from '../components/HeliPage/WeekView';
@@ -41,6 +43,9 @@ const HeliPage = () => {
     loading, 
     error, 
     fetchData, 
+    refreshData,
+    timeLeft,
+    lastUpdated,
     setTrips, 
     setPassengers 
   } = useTripData(user?.token);
@@ -260,11 +265,19 @@ const HeliPage = () => {
             <Typography variant="h6" component="h1" sx={{ fontWeight: 'bold' }}>
               Helicopter Passengers
             </Typography>
+
+            {/* Refresh Button + Auto Timer */}
+            <RefreshControls 
+              timeLeft={timeLeft} 
+              onRefresh={() => refreshData(true)} 
+              loading={loading}
+            />
             
             <Box sx={{ 
               display: 'flex', 
               alignItems: 'center', 
               gap: 1,
+              ml: 2,
               '& .MuiButton-root': {
                 color: 'white',
                 borderColor: 'rgba(255, 255, 255, 0.23)',
@@ -329,12 +342,19 @@ const HeliPage = () => {
             />
           </Box>
           
-          {/* Developer Credit Section */}
+          {/* Developer Credit Section & Last Updated */}
           <Box sx={{ 
             display: 'flex', 
             flexDirection: 'column',
             gap: 0.5,
+            alignItems: 'flex-end'
           }}>
+            {/* Last Updated Display */}
+            <LastUpdated 
+              lastUpdated={lastUpdated} 
+              onRefresh={() => refreshData(true)} 
+            />
+
             <Typography 
               variant="caption" 
               sx={{ 
