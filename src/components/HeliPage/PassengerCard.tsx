@@ -73,6 +73,9 @@ export default function PassengerCard({
   const siteAbbreviation = getSiteAbbreviation(displayLocation);
   const shouldShowSiteText = siteAbbreviation !== ''; // Only show if not empty (not Ogle)
   
+  // NEW: A rig transfer = anything that isn't Ogle
+  const isRigTransfer = displayLocation.toUpperCase() !== 'OGLE';
+  
   // Determine if this is a group trip
   const isGroupTrip = numberOfPassengers && numberOfPassengers > 1;
   
@@ -93,10 +96,13 @@ export default function PassengerCard({
   
   // Add TBN class
   const tbnClass = isTBN ? 'tbn-passenger-card' : '';
+  
+  // NEW: Add rig-transfer class
+  const rigClass = isRigTransfer ? 'rig-transfer' : '';
 
   return (
     <div 
-      className={`${baseClasses} ${pastClass} ${groupClass} ${tbnClass}`}
+      className={`${baseClasses} ${pastClass} ${groupClass} ${tbnClass} ${rigClass}`}
     >
       <div className="passenger-content">
         <div className="passenger-main-info">

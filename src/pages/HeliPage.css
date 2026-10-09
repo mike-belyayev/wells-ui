@@ -233,11 +233,26 @@
   color: #0d47a1;
 }
 
+/* ============================================ */
+/* REQUEST 5: POB numbers — bolder, darker, larger */
+/* ============================================ */
 .pob-value {
-  font-weight: 700;
-  font-size: 0.75rem;
+  font-weight: 900;
+  font-size: 0.95rem;
+  color: #0b2d0f;
   text-align: center;
   flex: 1;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  line-height: 1;
+}
+
+/* Optional: styling for the "(updated ...)" hint inside POB */
+.pob-update-info {
+  font-size: 0.7rem;
+  font-weight: 500;
+  opacity: 0.85;
+  margin-left: 2px;
 }
 
 /* Normal POB - Light green background, dark green text */
@@ -258,9 +273,16 @@
   color: #ffffff !important;
 }
 
-/* Normal POB text color for critical */
+/* Keep POB readable on warning background */
+.pob-footer.warning .pob-value {
+  color: #7a4d00 !important;
+  text-shadow: none;
+}
+
+/* Keep POB readable on critical background */
 .pob-footer.critical .pob-value {
   color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .add-button {
@@ -308,16 +330,9 @@
   opacity: 0.5;
 }
 
-/* TBN passenger highlighting */
-.passenger-card-container.tbn-passenger .passenger-card {
-  background-color: #ffebee !important;
-  border-left: 3px solid #d32f2f !important;
-}
-
-.passenger-card-container.tbn-passenger .passenger-name {
-  color: #d32f2f !important;
-  font-weight: 700 !important;
-}
+/* NOTE: The old TBN block that used to live here has been REMOVED.
+   TBN styling is now handled entirely inside PassengerCard.css
+   via the .tbn-passenger-card class. */
 
 .drop-target {
   background-color: rgba(255, 255, 0, 0.2);
@@ -425,7 +440,7 @@
   .week-row {
     grid-template-columns: repeat(7, 1fr);
   }
-  
+
   .date-header,
   .pob-footer {
     font-size: 1rem;

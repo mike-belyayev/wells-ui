@@ -1,8 +1,46 @@
-/* PassengerCard.css - Ensure past-trip overrides EVERYTHING */
+/* ============================================================
+   PassengerCard.css
+   ============================================================
+   ADJUST THESE VARIABLES to tune the palette.
+   Everything below references these — change once, applies everywhere.
+   ============================================================ */
+:root {
+  /* --- Ogle-related cards (onshore) --- */
+  --card-purple-bg:        #ede7f6;   /* light purple background */
+  --card-purple-text:      #311b92;   /* deep purple text */
+  --card-purple-subtext:   #5e35b1;   /* slightly lighter for job role */
+  --card-purple-incoming-border: #4a148c; /* dark outline for incoming only */
+
+  /* --- Rig transfer cards (non-Ogle) --- */
+  --card-rig-blue-bg:      #1a237e;   /* dark blue background */
+  --card-rig-blue-text:    #ffffff;   /* white text */
+  --card-rig-blue-subtext: #c5cae9;   /* light lavender for job role */
+  --card-rig-incoming-border: #0d0f4a; /* darker outline for incoming rig transfers */
+
+  /* --- Unconfirmed (red alert) --- */
+  --card-unconfirmed-bg:   #ffebee;
+  --card-unconfirmed-text: #d32f2f;
+  --card-unconfirmed-border: #d32f2f;
+
+  /* --- Past trips (muted, 30-50% more grey) --- */
+  --card-past-bg:          hwb(0 94% 6%);
+  --card-past-text:        #b0b0b0;
+  --card-past-border:      #c9c9c9;
+
+  /* --- Shared sizing --- */
+  --card-height:           2rem;
+  --card-padding:          0.125rem 0.25rem;
+  --compact-font-size:     0.65rem;
+  --spacing-xs:            0.125rem;
+}
+
+/* ============================================================
+   BASE CARD
+   ============================================================ */
 .passenger-card {
   border-radius: 0.1875rem;
-  color: white;
-  box-shadow: 0 0.0625rem 0.0625rem rgba(0,0,0,0.1);
+  color: var(--card-purple-text);
+  box-shadow: 0 0.0625rem 0.0625rem rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -16,171 +54,74 @@
   font-size: var(--compact-font-size);
   margin-bottom: var(--spacing-xs);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+
+  /* Default (Ogle) card appearance */
+  background-color: var(--card-purple-bg);
 }
 
 .passenger-card:hover:not(.past-trip) {
   transform: translateY(-0.0625rem);
-  box-shadow: 0 0.125rem 0.1875rem rgba(0,0,0,0.15);
+  box-shadow: 0 0.125rem 0.1875rem rgba(0, 0, 0, 0.15);
 }
 
-/* Base colors for incoming/outgoing - FUTURE TRIPS */
-.passenger-card.incoming.confirmed {
-  background-color: #2e7d32; /* Green */
+/* ============================================================
+   REQUEST 1 & 2: Incoming vs Outgoing outline (Ogle cards only)
+   ============================================================ */
+.passenger-card.incoming:not(.rig-transfer):not(.unconfirmed):not(.past-trip) {
+  border: 1px solid var(--card-purple-incoming-border);
 }
 
-.passenger-card.outgoing.confirmed {
-  background-color: #1565c0; /* Blue */
+.passenger-card.outgoing:not(.rig-transfer):not(.unconfirmed):not(.past-trip) {
+  border: 1px solid transparent; /* no outline for outgoing */
 }
 
-.passenger-card.incoming.unconfirmed {
-  background-color: rgba(46, 125, 50, 0.6);
+/* ============================================================
+   REQUEST 6: Rig transfers — dark blue for BOTH in/out
+   ============================================================ */
+.passenger-card.rig-transfer:not(.unconfirmed):not(.past-trip):not(.tbn-passenger-card) {
+  background-color: var(--card-rig-blue-bg);
+  color: var(--card-rig-blue-text);
 }
 
-.passenger-card.outgoing.unconfirmed {
-  background-color: rgba(21, 101, 192, 0.6);
+.passenger-card.rig-transfer:not(.unconfirmed):not(.past-trip) .passenger-name {
+  color: var(--card-rig-blue-text);
 }
 
-/* Group trip styling - FUTURE TRIPS ONLY */
-.passenger-card.group-trip.incoming.confirmed {
-  background: linear-gradient(135deg, #1b5e20 0%, #0d4016 100%);
+.passenger-card.rig-transfer:not(.unconfirmed):not(.past-trip) .passenger-job {
+  color: var(--card-rig-blue-subtext);
 }
 
-.passenger-card.group-trip.outgoing.confirmed {
-  background: linear-gradient(135deg, #0d47a1 0%, #082b5c 100%);
+/* Incoming rig transfers get a subtle darker outline for consistency */
+.passenger-card.rig-transfer.incoming:not(.unconfirmed):not(.past-trip) {
+  border: 1px solid var(--card-rig-incoming-border);
 }
 
-.passenger-card.group-trip.incoming.unconfirmed {
-  background: linear-gradient(135deg, rgba(27, 94, 32, 0.8) 0%, rgba(13, 64, 22, 0.8) 100%);
+/* ============================================================
+   Text styling (applies to both purple and blue bases)
+   ============================================================ */
+.passenger-name {
+  font-weight: 600;
+  font-size: calc(var(--compact-font-size) + 0.05rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.1;
+  margin-bottom: 0;
+  color: inherit;
 }
 
-.passenger-card.group-trip.outgoing.unconfirmed {
-  background: linear-gradient(135deg, rgba(13, 71, 161, 0.8) 0%, rgba(8, 43, 92, 0.8) 100%);
-}
-
-/* TBN Passenger Styling - Red background with red text */
-.passenger-card.tbn-passenger-card,
-.passenger-card.tbn-passenger-card.incoming,
-.passenger-card.tbn-passenger-card.outgoing,
-.passenger-card.tbn-passenger-card.confirmed,
-.passenger-card.tbn-passenger-card.unconfirmed,
-.passenger-card.tbn-passenger-card.group-trip,
-.passenger-card.tbn-passenger-card.group-trip.incoming,
-.passenger-card.tbn-passenger-card.group-trip.outgoing {
-  background-color: #ffebee !important; /* Light red background */
-  color: #d32f2f !important; /* Dark red text */
-  background-image: none !important; /* Remove gradients */
-  border-left: 3px solid #d32f2f !important;
-}
-
-.passenger-card.tbn-passenger-card .passenger-name {
-  color: #d32f2f !important;
-  font-weight: 700 !important;
-}
-
-.passenger-card.tbn-passenger-card .passenger-job {
-  color: #c62828 !important;
-  opacity: 0.8;
-}
-
-.passenger-card.tbn-passenger-card .passenger-count {
-  background-color: rgba(211, 47, 47, 0.2) !important;
-  color: #d32f2f !important;
-  border: 1px solid rgba(211, 47, 47, 0.3) !important;
-}
-
-.passenger-card.tbn-passenger-card .site-text {
-  background-color: #ffcdd2 !important;
-  color: #c62828 !important;
-  border-left: 1px solid rgba(211, 47, 47, 0.2) !important;
-}
-
-/* CRITICAL: Past trip must override TBN */
-.passenger-card.past-trip.tbn-passenger-card,
-.passenger-card.past-trip.tbn-passenger-card.incoming,
-.passenger-card.past-trip.tbn-passenger-card.outgoing,
-.passenger-card.past-trip.tbn-passenger-card.confirmed,
-.passenger-card.past-trip.tbn-passenger-card.unconfirmed,
-.passenger-card.past-trip.tbn-passenger-card.group-trip {
-  background-color: #e0e0e0 !important; /* Light grey background */
-  color: #666 !important; /* Dark grey text */
-  border-left: 3px solid #999 !important;
-  background-image: none !important;
-}
-
-.passenger-card.past-trip.tbn-passenger-card .passenger-name,
-.passenger-card.past-trip.tbn-passenger-card .passenger-job {
-  color: #666 !important;
-}
-
-.passenger-card.past-trip.tbn-passenger-card .passenger-count {
-  background-color: rgba(0, 0, 0, 0.15) !important;
-  color: #666 !important;
-  border: 1px solid rgba(0, 0, 0, 0.2) !important;
-}
-
-.passenger-card.past-trip.tbn-passenger-card .site-text {
-  background-color: #f0f0f0 !important;
-  color: #888 !important;
-  border-left: 1px solid #ddd !important;
-}
-
-/* Site text styling - Right edge, black on white */
-.site-text {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  text-orientation: mixed;
-  font-size: 0.7rem;
-  font-weight: bold;
-  color: #000000; /* Black text */
-  padding: 0 rem;
-  text-transform: uppercase;
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #ffffff; /* White background */
-  border-left: 1px solid rgba(0, 0, 0, 0.1);
-  min-width: 1rem;
-  max-width: 1rem;
-}
-
-/* CRITICAL FIX: PAST TRIP STYLING - MUST OVERRIDE EVERYTHING */
-/* Using more specific selectors to ensure they win */
-.passenger-card.past-trip,
-.passenger-card.past-trip.incoming,
-.passenger-card.past-trip.outgoing,
-.passenger-card.past-trip.confirmed,
-.passenger-card.past-trip.unconfirmed,
-.passenger-card.past-trip.group-trip,
-.passenger-card.past-trip.group-trip.incoming,
-.passenger-card.past-trip.group-trip.outgoing,
-.passenger-card.past-trip.group-trip.confirmed,
-.passenger-card.past-trip.group-trip.unconfirmed {
-  background-color: #e0e0e0 !important; /* Light grey background */
-  color: #666 !important; /* Dark grey text */
-  background-image: none !important; /* Remove gradients */
-}
-
-.passenger-card.past-trip .passenger-name,
-.passenger-card.past-trip .passenger-job {
-  color: #666 !important;
-  text-shadow: none !important;
-}
-
-.passenger-card.past-trip .passenger-count {
-  background-color: rgba(0, 0, 0, 0.15) !important;
-  color: #666 !important;
-  border: 1px solid rgba(0, 0, 0, 0.2) !important;
-}
-
-.passenger-card.past-trip .site-text {
-  background-color: #f0f0f0 !important;
-  color: #888 !important;
-  border-left: 1px solid #ddd !important;
+.passenger-job {
+  font-size: calc(var(--compact-font-size) - 0.05rem);
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-style: italic;
+  font-family: 'Brush Script MT', cursive, Arial, sans-serif;
+  line-height: 1;
+  margin-top: 0;
+  color: inherit;
 }
 
 .passenger-content {
@@ -201,32 +142,6 @@
   min-width: 0;
 }
 
-.passenger-count {
-  font-size: 0.65rem;
-  font-weight: 800;
-  background-color: rgba(255, 255, 255, 0.25);
-  padding: 0.0625rem 0.1875rem;
-  border-radius: 0.125rem;
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  height: 1.2rem;
-}
-
-/* Enhanced group trip count badge - FUTURE ONLY */
-.passenger-card.group-trip:not(.past-trip) .passenger-count {
-  background-color: rgba(255, 255, 255, 0.4);
-  font-weight: 900;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-/* Past trip count badge override */
-.passenger-card.past-trip .passenger-count {
-  background-color: rgba(0, 0, 0, 0.1) !important;
-  font-weight: 600;
-  border: 1px solid rgba(0, 0, 0, 0.2) !important;
-}
-
 .passenger-text {
   flex: 1;
   min-width: 0;
@@ -235,50 +150,199 @@
   justify-content: center;
 }
 
-.passenger-name {
-  font-weight: 600;
-  font-size: calc(var(--compact-font-size) + 0.05rem);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.1;
-  margin-bottom: 0;
+/* Passenger count badge */
+.passenger-count {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background-color: rgba(255, 255, 255, 0.55);
+  color: inherit;
+  padding: 0.0625rem 0.1875rem;
+  border-radius: 0.125rem;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 1.2rem;
 }
 
-.passenger-job {
-  font-size: calc(var(--compact-font-size) - 0.05rem);
-  opacity: 0.9;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-style: italic;
-  font-family: 'Brush Script MT', cursive, Arial, sans-serif;
-  line-height: 1;
-  margin-top: 0;
+.passenger-card.rig-transfer:not(.unconfirmed):not(.past-trip) .passenger-count {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
-/* Compact layout for very small screens */
+/* ============================================================
+   REQUEST 3: Unconfirmed = red alert (overrides everything except past)
+   ============================================================ */
+.passenger-card.unconfirmed:not(.past-trip) {
+  background-color: var(--card-unconfirmed-bg) !important;
+  color: var(--card-unconfirmed-text) !important;
+  background-image: none !important;
+  border-left: 3px solid var(--card-unconfirmed-border) !important;
+}
+
+.passenger-card.unconfirmed:not(.past-trip) .passenger-name,
+.passenger-card.unconfirmed:not(.past-trip) .passenger-job {
+  color: var(--card-unconfirmed-text) !important;
+}
+
+.passenger-card.unconfirmed:not(.past-trip) .passenger-name {
+  font-weight: 700 !important;
+}
+
+.passenger-card.unconfirmed:not(.past-trip) .passenger-count {
+  background-color: rgba(211, 47, 47, 0.15) !important;
+  color: var(--card-unconfirmed-text) !important;
+  border: 1px solid rgba(211, 47, 47, 0.3) !important;
+}
+
+.passenger-card.unconfirmed:not(.past-trip) .site-text {
+  background-color: #ffcdd2 !important;
+  color: #c62828 !important;
+  border-left: 1px solid rgba(211, 47, 47, 0.2) !important;
+}
+
+/* ============================================================
+   TBN passengers (still red — same family as unconfirmed)
+   ============================================================ */
+.passenger-card.tbn-passenger-card:not(.past-trip) {
+  background-color: var(--card-unconfirmed-bg) !important;
+  color: var(--card-unconfirmed-text) !important;
+  background-image: none !important;
+  border-left: 3px solid var(--card-unconfirmed-border) !important;
+}
+
+.passenger-card.tbn-passenger-card:not(.past-trip) .passenger-name {
+  color: var(--card-unconfirmed-text) !important;
+  font-weight: 700 !important;
+}
+
+.passenger-card.tbn-passenger-card:not(.past-trip) .passenger-job {
+  color: #c62828 !important;
+  opacity: 0.8;
+}
+
+.passenger-card.tbn-passenger-card:not(.past-trip) .passenger-count {
+  background-color: rgba(211, 47, 47, 0.2) !important;
+  color: var(--card-unconfirmed-text) !important;
+  border: 1px solid rgba(211, 47, 47, 0.3) !important;
+}
+
+.passenger-card.tbn-passenger-card:not(.past-trip) .site-text {
+  background-color: #ffcdd2 !important;
+  color: #c62828 !important;
+  border-left: 1px solid rgba(211, 47, 47, 0.2) !important;
+}
+
+/* ============================================================
+   REQUEST 4: Past trips — darker grey, override all other rules
+   ============================================================ */
+.passenger-card.past-trip,
+.passenger-card.past-trip.incoming,
+.passenger-card.past-trip.outgoing,
+.passenger-card.past-trip.confirmed,
+.passenger-card.past-trip.unconfirmed,
+.passenger-card.past-trip.group-trip,
+.passenger-card.past-trip.rig-transfer,
+.passenger-card.past-trip.tbn-passenger-card {
+  background-color: var(--card-past-bg) !important;
+  color: var(--card-past-text) !important;
+  background-image: none !important;
+  border: 1px solid var(--card-past-border) !important;
+  border-left: 3px solid var(--card-past-border) !important;
+}
+
+.passenger-card.past-trip .passenger-name,
+.passenger-card.past-trip .passenger-job {
+  color: var(--card-past-text) !important;
+  text-shadow: none !important;
+}
+
+.passenger-card.past-trip .passenger-count {
+  background-color: rgba(0, 0, 0, 0.12) !important;
+  color: var(--card-past-text) !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+}
+
+.passenger-card.past-trip .site-text {
+  background-color: #e8e8e8 !important;
+  color: #777 !important;
+  border-left: 1px solid #bbb !important;
+}
+
+/* ============================================================
+   Site text on right edge
+   ============================================================ */
+.site-text {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-orientation: mixed;
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: #000000;
+  padding: 0;
+  text-transform: uppercase;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  min-width: 1rem;
+  max-width: 1rem;
+}
+
+/* Rig transfer site text = light on dark */
+.passenger-card.rig-transfer:not(.unconfirmed):not(.past-trip):not(.tbn-passenger-card) .site-text {
+  background-color: #0d0f4a;
+  color: #ffffff;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ============================================================
+   Group trip — subtle emphasis (no gradients anymore)
+   ============================================================ */
+.passenger-card.group-trip:not(.past-trip):not(.unconfirmed):not(.tbn-passenger-card) {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15) inset;
+}
+
+.passenger-card.group-trip:not(.past-trip) .passenger-count {
+  background-color: rgba(255, 255, 255, 0.7);
+  font-weight: 900;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.passenger-card.rig-transfer.group-trip:not(.past-trip):not(.unconfirmed) .passenger-count {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* ============================================================
+   Compact layout for small screens
+   ============================================================ */
 @media (max-width: 48rem) {
   .passenger-card {
     height: 1.8rem;
     max-height: 1.8rem;
     padding: 0.125rem 0.25rem;
   }
-  
+
   .passenger-name {
     font-size: 0.7rem;
   }
-  
+
   .passenger-job {
     font-size: 0.55rem;
   }
-  
+
   .passenger-count {
     font-size: 0.6rem;
     padding: 0 0.125rem;
     height: 1rem;
   }
-  
+
   .site-text {
     font-size: 0.6rem;
     min-width: 1.5rem;
@@ -287,20 +351,12 @@
   }
 }
 
-/* Ensure text is readable on all backgrounds */
-.passenger-card.group-trip:not(.past-trip) .passenger-name,
-.passenger-card.group-trip:not(.past-trip) .passenger-job {
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-/* ============================================ */
-/* SORTING ARROWS - Positioned with negative offset */
-/* ============================================ */
-
-/* Container for arrows - positioned absolutely, no space taken */
+/* ============================================================
+   Sorting arrows (unchanged behavior)
+   ============================================================ */
 .sort-arrows {
   position: absolute;
-  right: -20px; /* Negative offset - arrows appear outside the card to the right */
+  right: -20px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -309,16 +365,14 @@
   opacity: 0;
   transition: opacity 0.2s ease;
   z-index: 20;
-  pointer-events: none; /* Prevent interference with card clicks */
+  pointer-events: none;
 }
 
-/* Show arrows on hover */
 .passenger-card-container:hover .sort-arrows {
   opacity: 1;
-  pointer-events: auto; /* Enable clicks when visible */
+  pointer-events: auto;
 }
 
-/* Individual arrow buttons */
 .sort-arrow {
   width: 18px;
   height: 18px;
@@ -347,43 +401,24 @@
   transform: scale(0.9);
 }
 
-.sort-arrow.up-arrow {
-  margin-bottom: 1px;
-}
+.sort-arrow.up-arrow { margin-bottom: 1px; }
+.sort-arrow.down-arrow { margin-top: 1px; }
 
-.sort-arrow.down-arrow {
-  margin-top: 1px;
-}
-
-/* Hide arrows on past trips */
-.passenger-card-container.past-trip .sort-arrows {
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* Hide arrows on readonly cards */
+.passenger-card-container.past-trip .sort-arrows,
 .passenger-card-container.readonly .sort-arrows {
   opacity: 0 !important;
   pointer-events: none !important;
 }
 
-/* Ensure card container has proper overflow to show arrows */
 .passenger-card-container {
   position: relative;
-  overflow: visible !important; /* Allow arrows to overflow */
-}
-
-/* Make sure the card itself doesn't clip the arrows */
-.passenger-card {
   overflow: visible !important;
 }
 
-/* Adjust card padding to accommodate arrows when visible */
 .passenger-card-container:not(.readonly):not(.past-trip):hover .passenger-card {
-  padding-right: 22px; /* Make room for arrows on hover */
+  padding-right: 22px;
 }
 
-/* Smooth transition for padding */
 .passenger-card {
-  transition: padding-right 0.2s ease;
+  transition: padding-right 0.2s ease, background-color 0.2s ease;
 }
