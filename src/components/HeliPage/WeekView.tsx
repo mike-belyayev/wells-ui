@@ -78,7 +78,7 @@ const WeekView: React.FC<WeekViewProps> = ({
         const isToday = isTodayDate(day.date);
         const isPast = isPastDate(day.date);
         const dateStr = format(day.date, 'yyyy-MM-dd');
-        
+
         // Admin can edit any date, non-admin can only edit future dates (not past and not today)
         const isEditable = isAdmin || (!isPast && !isToday);
 
@@ -89,7 +89,7 @@ const WeekView: React.FC<WeekViewProps> = ({
           (sum: number, trip: Trip) => sum + (trip.numberOfPassengers || 1),
           0
         );
-        
+
         const outgoingTotal = day.outgoing.reduce(
           (sum: number, trip: Trip) => sum + (trip.numberOfPassengers || 1),
           0
@@ -100,11 +100,11 @@ const WeekView: React.FC<WeekViewProps> = ({
             <div className={`date-header ${isToday ? 'today' : ''}`}>
               {format(day.date, 'MMM d')}
             </div>
-            
+
             <div className="passenger-lists">
               <div className="sections-container">
                 {/* Incoming Section */}
-                <div 
+                <div
                   className="incoming-section"
                   onDragOver={(e) => isEditable && e.preventDefault()}
                   onDrop={(e) => {
@@ -146,7 +146,7 @@ const WeekView: React.FC<WeekViewProps> = ({
                             numberOfPassengers={trip.numberOfPassengers}
                             tripDate={trip.tripDate}
                           />
-                          
+
                           {/* Sorting arrows - only show for admin on editable dates */}
                           {isEditable && isAdmin && (
                             <div className="sort-arrows">
@@ -186,9 +186,9 @@ const WeekView: React.FC<WeekViewProps> = ({
                     </button>
                   )}
                 </div>
-                
+
                 {/* Outgoing Section */}
-                <div 
+                <div
                   className="outgoing-section"
                   onDragOver={(e) => isEditable && e.preventDefault()}
                   onDrop={(e) => {
@@ -230,7 +230,7 @@ const WeekView: React.FC<WeekViewProps> = ({
                             numberOfPassengers={trip.numberOfPassengers}
                             tripDate={trip.tripDate}
                           />
-                          
+
                           {/* Sorting arrows - only show for admin on editable dates */}
                           {isEditable && isAdmin && (
                             <div className="sort-arrows">
@@ -272,11 +272,12 @@ const WeekView: React.FC<WeekViewProps> = ({
                 </div>
               </div>
             </div>
-            
+
             {/* Updated POB Footer with daily totals */}
             <div className={`pob-footer ${pobStatus} ${isPast ? 'past' : ''}`}>
+              {/* LABELS SWAPPED: incoming column now shows "Out:" (relative to Ogle) */}
               <span className="daily-total incoming-total">
-                In: {incomingTotal}
+                Out: {incomingTotal}
               </span>
               <span className="pob-value">
                 POB: {day.pob}
@@ -286,8 +287,9 @@ const WeekView: React.FC<WeekViewProps> = ({
                   </span>
                 )}
               </span>
+              {/* LABELS SWAPPED: outgoing column now shows "In:" (relative to Ogle) */}
               <span className="daily-total outgoing-total">
-                Out: {outgoingTotal}
+                In: {outgoingTotal}
               </span>
             </div>
           </div>

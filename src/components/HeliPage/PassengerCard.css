@@ -5,33 +5,33 @@
    Everything below references these — change once, applies everywhere.
    ============================================================ */
 :root {
-  /* --- Ogle-related cards (onshore) --- */
-  --card-purple-bg:        #ede7f6;   /* light purple background */
-  --card-purple-text:      #311b92;   /* deep purple text */
-  --card-purple-subtext:   #5e35b1;   /* slightly lighter for job role */
-  --card-purple-incoming-border: #4a148c; /* dark outline for incoming only */
+  /* --- Ogle-related cards (on-shore) --- */
+  --card-incoming-bg:       #52a756;   /* green — for Ogle incoming */
+  --card-outgoing-bg:       #3581d7;   /* blue — for Ogle outgoing */
+  --card-ogle-text:         #ffffff;   /* white text on colored cards */
+  --card-ogle-subtext:      #e0e0e0;   /* lighter for job role */
 
   /* --- Rig transfer cards (non-Ogle) --- */
-  --card-rig-blue-bg:      #1a237e;   /* dark blue background */
-  --card-rig-blue-text:    #ffffff;   /* white text */
-  --card-rig-blue-subtext: #c5cae9;   /* light lavender for job role */
-  --card-rig-incoming-border: #0d0f4a; /* darker outline for incoming rig transfers */
+  --card-rig-blue-bg:       #080325;   /* dark blue background */
+  --card-rig-blue-text:     #ffffff;
+  --card-rig-blue-subtext:  #c5cae9;
+  --card-rig-incoming-border: #0d0f4a;
 
   /* --- Unconfirmed (red alert) --- */
-  --card-unconfirmed-bg:   #ffebee;
-  --card-unconfirmed-text: #d32f2f;
+  --card-unconfirmed-bg:    #ffebee;
+  --card-unconfirmed-text:  #d32f2f;
   --card-unconfirmed-border: #d32f2f;
 
-  /* --- Past trips (muted, 30-50% more grey) --- */
-  --card-past-bg:          hwb(0 94% 6%);
-  --card-past-text:        #b0b0b0;
-  --card-past-border:      #c9c9c9;
+  /* --- Past trips (muted) --- */
+  --card-past-bg:           #e9e9e9;
+  --card-past-text:         #a9a9a9;
+  --card-past-border:       #dcdbdb;
 
   /* --- Shared sizing --- */
-  --card-height:           2rem;
-  --card-padding:          0.125rem 0.25rem;
-  --compact-font-size:     0.65rem;
-  --spacing-xs:            0.125rem;
+  --card-height:            2rem;
+  --card-padding:           0.125rem 0.25rem;
+  --compact-font-size:      0.65rem;
+  --spacing-xs:             0.125rem;
 }
 
 /* ============================================================
@@ -39,7 +39,7 @@
    ============================================================ */
 .passenger-card {
   border-radius: 0.1875rem;
-  color: var(--card-purple-text);
+  color: var(--card-ogle-text);
   box-shadow: 0 0.0625rem 0.0625rem rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
@@ -55,9 +55,7 @@
   margin-bottom: var(--spacing-xs);
   position: relative;
   overflow: visible;
-
-  /* Default (Ogle) card appearance */
-  background-color: var(--card-purple-bg);
+  background-color: var(--card-incoming-bg); /* fallback */
 }
 
 .passenger-card:hover:not(.past-trip) {
@@ -66,18 +64,30 @@
 }
 
 /* ============================================================
-   REQUEST 1 & 2: Incoming vs Outgoing outline (Ogle cards only)
+   Green/blue for Ogle (on-shore) cards
    ============================================================ */
-.passenger-card.incoming:not(.rig-transfer):not(.unconfirmed):not(.past-trip) {
-  border: 1px solid var(--card-purple-incoming-border);
+.passenger-card.incoming:not(.rig-transfer):not(.unconfirmed):not(.past-trip):not(.tbn-passenger-card) {
+  background-color: var(--card-incoming-bg);
+  color: var(--card-ogle-text);
 }
 
-.passenger-card.outgoing:not(.rig-transfer):not(.unconfirmed):not(.past-trip) {
-  border: 1px solid transparent; /* no outline for outgoing */
+.passenger-card.outgoing:not(.rig-transfer):not(.unconfirmed):not(.past-trip):not(.tbn-passenger-card) {
+  background-color: var(--card-outgoing-bg);
+  color: var(--card-ogle-text);
+}
+
+.passenger-card.incoming:not(.rig-transfer):not(.unconfirmed):not(.past-trip) .passenger-name,
+.passenger-card.outgoing:not(.rig-transfer):not(.unconfirmed):not(.past-trip) .passenger-name {
+  color: var(--card-ogle-text);
+}
+
+.passenger-card.incoming:not(.rig-transfer):not(.unconfirmed):not(.past-trip) .passenger-job,
+.passenger-card.outgoing:not(.rig-transfer):not(.unconfirmed):not(.past-trip) .passenger-job {
+  color: var(--card-ogle-subtext);
 }
 
 /* ============================================================
-   REQUEST 6: Rig transfers — dark blue for BOTH in/out
+   Rig transfers — dark blue for BOTH in/out
    ============================================================ */
 .passenger-card.rig-transfer:not(.unconfirmed):not(.past-trip):not(.tbn-passenger-card) {
   background-color: var(--card-rig-blue-bg);
@@ -92,13 +102,12 @@
   color: var(--card-rig-blue-subtext);
 }
 
-/* Incoming rig transfers get a subtle darker outline for consistency */
 .passenger-card.rig-transfer.incoming:not(.unconfirmed):not(.past-trip) {
   border: 1px solid var(--card-rig-incoming-border);
 }
 
 /* ============================================================
-   Text styling (applies to both purple and blue bases)
+   Text styling
    ============================================================ */
 .passenger-name {
   font-weight: 600;
@@ -150,12 +159,9 @@
   justify-content: center;
 }
 
-/* Passenger count badge */
 .passenger-count {
   font-size: 0.65rem;
   font-weight: 800;
-  background-color: rgba(255, 255, 255, 0.55);
-  color: inherit;
   padding: 0.0625rem 0.1875rem;
   border-radius: 0.125rem;
   display: inline-flex;
@@ -165,15 +171,13 @@
 }
 
 .passenger-card.rig-transfer:not(.unconfirmed):not(.past-trip) .passenger-count {
-  background-color: rgba(255, 255, 255, 0.2);
   color: #ffffff;
 }
 
 /* ============================================================
-   REQUEST 3: Unconfirmed = red alert (overrides everything except past)
+   Unconfirmed = red alert
    ============================================================ */
 .passenger-card.unconfirmed:not(.past-trip) {
-  background-color: var(--card-unconfirmed-bg) !important;
   color: var(--card-unconfirmed-text) !important;
   background-image: none !important;
   border-left: 3px solid var(--card-unconfirmed-border) !important;
@@ -189,19 +193,17 @@
 }
 
 .passenger-card.unconfirmed:not(.past-trip) .passenger-count {
-  background-color: rgba(211, 47, 47, 0.15) !important;
   color: var(--card-unconfirmed-text) !important;
   border: 1px solid rgba(211, 47, 47, 0.3) !important;
 }
 
 .passenger-card.unconfirmed:not(.past-trip) .site-text {
-  background-color: #ffcdd2 !important;
   color: #c62828 !important;
   border-left: 1px solid rgba(211, 47, 47, 0.2) !important;
 }
 
 /* ============================================================
-   TBN passengers (still red — same family as unconfirmed)
+   TBN passengers (still red)
    ============================================================ */
 .passenger-card.tbn-passenger-card:not(.past-trip) {
   background-color: var(--card-unconfirmed-bg) !important;
@@ -233,7 +235,7 @@
 }
 
 /* ============================================================
-   REQUEST 4: Past trips — darker grey, override all other rules
+   Past trips — darker grey, override all other rules
    ============================================================ */
 .passenger-card.past-trip,
 .passenger-card.past-trip.incoming,
@@ -301,20 +303,18 @@
 }
 
 /* ============================================================
-   Group trip — subtle emphasis (no gradients anymore)
+   Group trip — subtle emphasis
    ============================================================ */
 .passenger-card.group-trip:not(.past-trip):not(.unconfirmed):not(.tbn-passenger-card) {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15) inset;
 }
 
 .passenger-card.group-trip:not(.past-trip) .passenger-count {
-  background-color: rgba(255, 255, 255, 0.7);
   font-weight: 900;
   border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
 .passenger-card.rig-transfer.group-trip:not(.past-trip):not(.unconfirmed) .passenger-count {
-  background-color: rgba(255, 255, 255, 0.25);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.35);
 }
@@ -352,7 +352,7 @@
 }
 
 /* ============================================================
-   Sorting arrows (unchanged behavior)
+   Sorting arrows
    ============================================================ */
 .sort-arrows {
   position: absolute;

@@ -1,3 +1,4 @@
+// src/components/HeliPage/AddTripModal.tsx
 import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import {
@@ -91,8 +92,18 @@ export default function AddTripModal({
   useEffect(() => {
     if (isOpen) {
       setTripDate(normalizeDate(selectedDate));
-      setFromOrigin('Ogle');
-      setToDestination(userHomeBase);
+
+      // NEW: Set direction based on which column's "+" was clicked
+      // incoming  → passenger arriving at the rig:   Ogle → Rig
+      // outgoing  → passenger leaving the rig:       Rig  → Ogle
+      if (tripType === 'incoming') {
+        setFromOrigin('Ogle');
+        setToDestination(userHomeBase);
+      } else {
+        setFromOrigin(userHomeBase);
+        setToDestination('Ogle');
+      }
+
       setConfirmed(true);
       setNumberOfPassengers('');
       setShowAddPassenger(false);
@@ -125,7 +136,7 @@ export default function AddTripModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     let finalPassengerId = selectedPassenger?._id;
 
     // If we're in add passenger mode, create the passenger first
@@ -173,7 +184,7 @@ export default function AddTripModal({
     };
 
     onSubmit(tripData);
-    
+
     // Clear only the passenger field and keep modal open
     setSelectedPassenger(null);
     setPassengerSearch('');
@@ -213,30 +224,30 @@ export default function AddTripModal({
   // Custom search logic
   const filteredPassengers = passengers.filter(passenger => {
     const searchLower = passengerSearch.toLowerCase().trim();
-    
+
     if (!searchLower) return false;
-    
+
     const firstName = passenger.firstName.toLowerCase();
     const lastName = passenger.lastName.toLowerCase();
     const jobRole = passenger.jobRole.toLowerCase();
     const fullName = `${firstName} ${lastName}`;
-    
+
     // Split search into words to handle multiple terms
     const searchWords = searchLower.split(/\s+/).filter(word => word.length > 0);
-    
+
     // If only one search word, check individual fields
     if (searchWords.length === 1) {
       const word = searchWords[0];
-      return firstName.includes(word) || 
-             lastName.includes(word) || 
+      return firstName.includes(word) ||
+             lastName.includes(word) ||
              jobRole.includes(word) ||
              fullName.includes(word);
     }
-    
+
     // If multiple search words, require ALL words to match somewhere
-    return searchWords.every(word => 
-      firstName.includes(word) || 
-      lastName.includes(word) || 
+    return searchWords.every(word =>
+      firstName.includes(word) ||
+      lastName.includes(word) ||
       jobRole.includes(word) ||
       fullName.includes(word)
     );
@@ -290,11 +301,11 @@ export default function AddTripModal({
                         fullWidth
                         sx={{ minWidth: 0 }}
                       />
-                      
+
                       {/* Custom Dropdown */}
                       {showDropdown && (
-                        <Paper 
-                          sx={{ 
+                        <Paper
+                          sx={{
                             position: 'absolute',
                             top: '100%',
                             left: 0,
@@ -327,7 +338,7 @@ export default function AddTripModal({
                               ))
                             ) : (
                               <ListItem>
-                                <ListItemText 
+                                <ListItemText
                                   primary="No passengers found"
                                   secondary={
                                     onAddPassenger && passengerSearch ? (
@@ -358,7 +369,7 @@ export default function AddTripModal({
                         </Paper>
                       )}
                     </Box>
-                    
+
                     <Button
                       startIcon={<PersonAdd />}
                       variant="outlined"
@@ -366,10 +377,10 @@ export default function AddTripModal({
                         setShowAddPassenger(true);
                         setShowDropdown(false);
                       }}
-                      sx={{ 
-                        height: '56px', 
+                      sx={{
+                        height: '56px',
                         minWidth: '140px',
-                        flexShrink: 0 
+                        flexShrink: 0
                       }}
                     >
                       Add New
@@ -380,8 +391,8 @@ export default function AddTripModal({
                 <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h6">Add New Passenger</Typography>
-                    <Button 
-                      size="small" 
+                    <Button
+                      size="small"
                       onClick={() => {
                         setShowAddPassenger(false);
                         setShowDropdown(false);
@@ -390,7 +401,7 @@ export default function AddTripModal({
                       Back to Search
                     </Button>
                   </Box>
-                  
+
                   <TextField
                     label="First Name"
                     value={newPassenger.firstName}
@@ -399,7 +410,7 @@ export default function AddTripModal({
                     required
                     margin="normal"
                   />
-                  
+
                   <TextField
                     label="Last Name"
                     value={newPassenger.lastName}
@@ -408,7 +419,7 @@ export default function AddTripModal({
                     required
                     margin="normal"
                   />
-                  
+
                   <TextField
                     label="Job Role"
                     value={newPassenger.jobRole}
@@ -435,7 +446,7 @@ export default function AddTripModal({
                   }}
                 />
               </FormControl>
-              
+
               <FormControlLabel
                 control={
                   <Checkbox
@@ -463,11 +474,11 @@ export default function AddTripModal({
                 </Select>
               </FormControl>
 
-              <IconButton 
+              <IconButton
                 onClick={handleSwapLocations}
-                sx={{ 
-                  mt: 2, 
-                  backgroundColor: 'primary.main', 
+                sx={{
+                  mt: 2,
+                  backgroundColor: 'primary.main',
                   color: 'white',
                   '&:hover': {
                     backgroundColor: 'primary.dark'
@@ -499,7 +510,7 @@ export default function AddTripModal({
                 type="number"
                 value={numberOfPassengers}
                 onChange={handlePassengerCountChange}
-                inputProps={{ 
+                inputProps={{
                   min: 1,
                   step: 1
                 }}
@@ -521,8 +532,8 @@ export default function AddTripModal({
               <Button
                 type="submit"
                 disabled={
-                  (!selectedPassenger && !showAddPassenger) || 
-                  fromOrigin === toDestination || 
+                  (!selectedPassenger && !showAddPassenger) ||
+                  fromOrigin === toDestination ||
                   !tripDate ||
                   (showAddPassenger && (!newPassenger.firstName || !newPassenger.lastName || !newPassenger.jobRole))
                 }
